@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-sql-driver/mysql"
 
-	"quotes/config"
+	"quotes/env"
 )
 
 type Config struct {
@@ -23,12 +23,15 @@ type Config struct {
 }
 
 func main() {
-	cfg := NewConfig()
-	if err := config.Marshal(cfg); err != nil {
+
+	// Application configuration
+	config := NewConfig()
+	if err := env.Marshal(config); err != nil {
 		log.Fatal(err)
 	}
 
-	_, err := NewDbConfig(cfg)
+	// Database configuration
+	_, err := NewDbConfig(config)
 	if err != nil {
 		log.Fatal(err)
 	}
