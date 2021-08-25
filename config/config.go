@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	defaultStructTag = "config"
+	defaultStructTag = "env"
 )
 
 // Marshal receives a struct pointer and attempts to parse
