@@ -23,10 +23,9 @@ type Config struct {
 }
 
 func main() {
-
-	// Application configuration
+	// App configuration
 	config := NewConfig()
-	if err := env.Marshal(config); err != nil {
+	if err := env.NewDecoder().Marshal(config); err != nil {
 		log.Fatal(err)
 	}
 

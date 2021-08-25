@@ -12,6 +12,15 @@ const (
 	defaultStructTag = "env"
 )
 
+type Decoder struct {
+	typ reflect.Type
+	val reflect.Value
+}
+
+func NewDecoder() *Decoder {
+	return &Decoder{}
+}
+
 // Marshal receives a struct pointer and attempts to parse
 // defined environment variables to match its types
 //
@@ -19,26 +28,32 @@ const (
 // If defined, environment variables will overwrite the struct defaults.
 //
 // When needed additional type support, modify the convert func accordingly.
-func Marshal(s interface{}) error {
-	rt := reflect.TypeOf(s)
-	rv := reflect.ValueOf(s)
+func (dec *Decoder) Marshal(s interface{}) error {
+	dec.typ = reflect.TypeOf(s)
+	dec.val = reflect.ValueOf(s)
 
-	// Make the argument is a struct pointer
-	if rv.Kind() != reflect.Ptr || rv.Elem().Kind() != reflect.Struct || rv.IsNil() {
+	err := dec.parse()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (dec *Decoder) parse() error {
+	// Validate argument is a struct pointer
+	if dec.val.Kind() != reflect.Ptr || dec.val.Elem().Kind() != reflect.Struct || dec.val.IsNil() {
 		return errors.New("value must be a struct pointer")
 	}
 
-	for i := 0; i < rv.Elem().NumField(); i++ {
-		rtf := rt.Elem().Field(i)
-		rvf := rv.Elem().Field(i)
+	for i := 0; i < dec.val.Elem().NumField(); i++ {
+		rtf := dec.typ.Elem().Field(i)
+		rvf := dec.val.Elem().Field(i)
 
-		tag := rtf.Tag.Get(defaultStructTag)
-		if tag == "" {
-			return errors.New(fmt.Sprintf("invalid struct config tag [%s]", rtf.Name))
-		}
-
-		if value, ok := os.LookupEnv(tag); ok {
-			if err := convert(&rvf, value); err != nil {
+		// Locate an environment variable by Tag name.
+		// When defined, attempt to convert it to its corresponding struct type.
+		if value := os.Getenv(rtf.Tag.Get(defaultStructTag)); value != "" {
+			if err := dec.convert(&rvf, value); err != nil {
 				return err
 			}
 		}
@@ -49,7 +64,7 @@ func Marshal(s interface{}) error {
 
 // convert attempts to convert a given string value(v)
 // to the reflected struct field type(*rv)
-func convert(rv *reflect.Value, v string) error {
+func (Decoder) convert(rv *reflect.Value, v string) error {
 	switch rv.Type().Kind() {
 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
