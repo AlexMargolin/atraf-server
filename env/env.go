@@ -32,6 +32,11 @@ func (dec *Decoder) Marshal(s interface{}) error {
 	dec.typ = reflect.TypeOf(s)
 	dec.val = reflect.ValueOf(s)
 
+	// Validate argument is a struct pointer
+	if dec.val.Kind() != reflect.Ptr || dec.val.Elem().Kind() != reflect.Struct || dec.val.IsNil() {
+		return errors.New("value must be a struct pointer")
+	}
+
 	err := dec.parse()
 	if err != nil {
 		return err
@@ -40,20 +45,16 @@ func (dec *Decoder) Marshal(s interface{}) error {
 	return nil
 }
 
+// parse Attempts to locate an environment variable by the struct field Tag name.
+// When the environment variable is defined, attempt
+// to convert it to its corresponding struct type.
 func (dec *Decoder) parse() error {
-	// Validate argument is a struct pointer
-	if dec.val.Kind() != reflect.Ptr || dec.val.Elem().Kind() != reflect.Struct || dec.val.IsNil() {
-		return errors.New("value must be a struct pointer")
-	}
-
 	for i := 0; i < dec.val.Elem().NumField(); i++ {
-		rtf := dec.typ.Elem().Field(i)
-		rvf := dec.val.Elem().Field(i)
+		rt := dec.typ.Elem().Field(i)
+		rv := dec.val.Elem().Field(i)
 
-		// Locate an environment variable by Tag name.
-		// When defined, attempt to convert it to its corresponding struct type.
-		if value := os.Getenv(rtf.Tag.Get(defaultStructTag)); value != "" {
-			if err := dec.convert(&rvf, value); err != nil {
+		if value := os.Getenv(rt.Tag.Get(defaultStructTag)); value != "" {
+			if err := dec.convert(&rv, value); err != nil {
 				return err
 			}
 		}
