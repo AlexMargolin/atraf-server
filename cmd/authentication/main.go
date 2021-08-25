@@ -23,8 +23,20 @@ type Config struct {
 }
 
 func main() {
-	// Default Configuration
-	cfg := &Config{
+	cfg := NewConfig()
+	if err := config.Marshal(cfg); err != nil {
+		log.Fatal(err)
+	}
+
+	_, err := NewDbConfig(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+// NewConfig Creates new Config and sets default values
+func NewConfig() *Config {
+	return &Config{
 		DbHost:       "localhost",
 		DbPort:       "3306",
 		DbUser:       "root",
@@ -34,22 +46,11 @@ func main() {
 		AuthATSecret: "abcd",
 		AuthRTSecret: "dcba",
 	}
-
-	if err := config.Marshal(cfg); err != nil {
-		log.Fatal(err)
-	}
-
-	// MySQL Database connection
-	_, err := NewDatabaseConnection(cfg)
-	if err != nil {
-		log.Fatal(err)
-	}
 }
 
-// NewDatabaseConnection Returns a new MySql DB Connection or error on failure
-func NewDatabaseConnection(c *Config) (*sql.DB, error) {
-	// DSN Configuration
-	mysqlConfig := &mysql.Config{
+// NewDbConfig Returns a new MySql DB Connection or error on failure
+func NewDbConfig(c *Config) (*sql.DB, error) {
+	cfg := &mysql.Config{
 		Addr:                 net.JoinHostPort(c.DbHost, c.DbPort),
 		User:                 c.DbUser,
 		Passwd:               c.DbPass,
@@ -57,10 +58,7 @@ func NewDatabaseConnection(c *Config) (*sql.DB, error) {
 		AllowNativePasswords: true,
 	}
 
-	// DSN config string
-	dsn := mysqlConfig.FormatDSN()
-
-	db, err := sql.Open("mysql", dsn)
+	db, err := sql.Open("mysql", cfg.FormatDSN())
 	if err != nil {
 		return nil, err
 	}
