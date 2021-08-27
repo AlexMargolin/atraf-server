@@ -17,3 +17,8 @@ func New() UID {
 func FromString(string string) (UID, error) {
 	return uuid.Parse(string)
 }
+
+// ToString is a wrapper for uuid.UUID.String
+func ToString(uid UID) string {
+	return uid.String()
+}

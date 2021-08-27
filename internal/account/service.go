@@ -9,17 +9,17 @@ import (
 )
 
 type Account struct {
-	Id        uid.UID
-	Email     string
-	Password  []byte
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	DeletedAt time.Time
+	Id           uid.UID
+	Email        string
+	PasswordHash []byte
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
+	DeletedAt    time.Time
 }
 
 type Storage interface {
-	ByEmail(email string) (*Account, error)
-	Insert(email string, password []byte) (uid.UID, error)
+	ByEmail(email string) (Account, error)
+	Insert(email string, passwordHash []byte) (uid.UID, error)
 }
 
 type Service struct {
@@ -28,14 +28,16 @@ type Service struct {
 
 // Register creates a new account using the provided email and password arguments
 func (service *Service) Register(email string, password string) (uid.UID, error) {
+	var accountId uid.UID
+
 	passwordHash, err := service.newPasswordHash(password)
 	if err != nil {
-		return uid.Nil, err
+		return accountId, err
 	}
 
-	accountId, err := service.storage.Insert(email, passwordHash)
+	accountId, err = service.storage.Insert(email, passwordHash)
 	if err != nil {
-		return uid.Nil, err
+		return accountId, err
 	}
 
 	return accountId, nil
@@ -44,15 +46,17 @@ func (service *Service) Register(email string, password string) (uid.UID, error)
 // Login attempts to fetch an existing account by the email address.
 // if found, the password argument is then compared to the Accounts stored hash value.
 // returns an Account on successful verification.
-func (service *Service) Login(email string, password string) (*Account, error) {
+func (service *Service) Login(email string, password string) (Account, error) {
+	var account Account
+
 	account, err := service.storage.ByEmail(email)
 	if err != nil {
-		return nil, err
+		return account, err
 	}
 
-	err = service.comparePasswordHash(password, account.Password)
+	err = service.comparePasswordHash(password, account.PasswordHash)
 	if err != nil {
-		return nil, err
+		return account, err
 	}
 
 	return account, nil
