@@ -28,16 +28,16 @@ func NewDecoder() *Decoder {
 // If defined, environment variables will overwrite the struct defaults.
 //
 // When needed additional type support, modify the convert func accordingly.
-func (dec *Decoder) Marshal(s interface{}) error {
-	dec.typ = reflect.TypeOf(s)
-	dec.val = reflect.ValueOf(s)
+func (d *Decoder) Marshal(s interface{}) error {
+	d.typ = reflect.TypeOf(s)
+	d.val = reflect.ValueOf(s)
 
 	// Validate argument is a struct pointer
-	if dec.val.Kind() != reflect.Ptr || dec.val.Elem().Kind() != reflect.Struct || dec.val.IsNil() {
+	if d.val.Kind() != reflect.Ptr || d.val.Elem().Kind() != reflect.Struct || d.val.IsNil() {
 		return errors.New("value must be a struct pointer")
 	}
 
-	err := dec.parse()
+	err := d.parse()
 	if err != nil {
 		return err
 	}
@@ -48,13 +48,13 @@ func (dec *Decoder) Marshal(s interface{}) error {
 // parse Attempts to locate an environment variable by the struct field Tag name.
 // When the environment variable is defined, attempt
 // to convert it to its corresponding struct type.
-func (dec *Decoder) parse() error {
-	for i := 0; i < dec.val.Elem().NumField(); i++ {
-		rt := dec.typ.Elem().Field(i)
-		rv := dec.val.Elem().Field(i)
+func (d *Decoder) parse() error {
+	for i := 0; i < d.val.Elem().NumField(); i++ {
+		rt := d.typ.Elem().Field(i)
+		rv := d.val.Elem().Field(i)
 
 		if value := os.Getenv(rt.Tag.Get(defaultStructTag)); value != "" {
-			if err := dec.convert(&rv, value); err != nil {
+			if err := d.convert(&rv, value); err != nil {
 				return err
 			}
 		}

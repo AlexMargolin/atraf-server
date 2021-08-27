@@ -43,7 +43,7 @@ func NewConfig() *Config {
 		DbPort:       "3306",
 		DbUser:       "root",
 		DbPass:       "",
-		DbName:       "at_db",
+		DbName:       "account_db",
 		ServerPort:   "8080",
 		AuthATSecret: "abcd",
 		AuthRTSecret: "dcba",
