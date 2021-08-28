@@ -57,7 +57,7 @@ func (handler *Handler) Create() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusCreated, &CreateResponse{commentId}) // 201
+		rest.Success(w, http.StatusCreated, CreateResponse{commentId}) // 201
 	}
 }
 
@@ -87,7 +87,7 @@ func (handler *Handler) Update() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusOK, &UpdateResponse{commentId}) // 200
+		rest.Success(w, http.StatusOK, UpdateResponse{commentId}) // 200
 	}
 }
 
@@ -105,7 +105,7 @@ func (handler *Handler) ReadMany() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusOK, &ReadManyResponse{comments}) // 200
+		rest.Success(w, http.StatusOK, ReadManyResponse{comments}) // 200
 	}
 }
 

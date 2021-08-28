@@ -57,7 +57,7 @@ func (handler *Handler) Create() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusCreated, &CreateResponse{postId}) // 201
+		rest.Success(w, http.StatusCreated, CreateResponse{postId}) // 201
 	}
 }
 
@@ -71,12 +71,12 @@ func (handler *Handler) Update() http.HandlerFunc {
 			return
 		}
 
-		if err := json.NewDecoder(r.Body).Decode(&fields); err != nil {
+		if err = json.NewDecoder(r.Body).Decode(&fields); err != nil {
 			rest.Error(w, http.StatusBadRequest) // 400
 			return
 		}
 
-		if err := handler.validator.Struct(fields); err != nil {
+		if err = handler.validator.Struct(fields); err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity) // 422
 			return
 		}
@@ -87,7 +87,7 @@ func (handler *Handler) Update() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusOK, &UpdateResponse{postId}) // 200
+		rest.Success(w, http.StatusOK, UpdateResponse{postId}) // 200
 	}
 }
 
@@ -105,7 +105,7 @@ func (handler *Handler) ReadOne() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusOK, &ReadOneResponse{post}) // 200
+		rest.Success(w, http.StatusOK, ReadOneResponse{post}) // 200
 	}
 }
 
@@ -127,7 +127,7 @@ func (handler *Handler) ReadMany() http.HandlerFunc {
 		// Determines whether current page will return any posts.
 		// Otherwise, we return an empty posts array.
 		if !middleware.HasCurrentPage(pagination, total) {
-			rest.Success(w, http.StatusOK, &ReadManyResponse{Total: total}) // 200
+			rest.Success(w, http.StatusOK, ReadManyResponse{Total: total}) // 200
 			return
 		}
 
@@ -140,7 +140,7 @@ func (handler *Handler) ReadMany() http.HandlerFunc {
 		// Determine whether next page will return any posts
 		hasNext := middleware.HasNextPage(pagination, total)
 
-		rest.Success(w, http.StatusOK, &ReadManyResponse{total, hasNext, posts}) // 200
+		rest.Success(w, http.StatusOK, ReadManyResponse{total, hasNext, posts}) // 200
 	}
 }
 

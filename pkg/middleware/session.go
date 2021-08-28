@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"quotes/pkg/rest"
 	"quotes/pkg/token"
 	"quotes/pkg/uid"
 )
@@ -27,20 +28,20 @@ func Session(secret string) func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			unverifiedToken, err := BearerToken(r)
 			if err != nil {
-				w.WriteHeader(http.StatusUnauthorized) // 401
+				rest.Error(w, http.StatusUnauthorized) // 401
 				return
 			}
 
 			// Verify Token & retrieve claims
 			claims, err := token.Verify(secret, unverifiedToken)
 			if err != nil {
-				w.WriteHeader(http.StatusUnauthorized) // 401
+				rest.Error(w, http.StatusUnauthorized) // 401
 				return
 			}
 
 			accountId, err := uid.FromString(claims.Subject)
 			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError) // 500
+				rest.Error(w, http.StatusInternalServerError) // 500
 				return
 			}
 

@@ -78,7 +78,7 @@ func (handler *Handler) Login(tokenSecret string) http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusOK, &LoginResponse{accessToken})
+		rest.Success(w, http.StatusOK, LoginResponse{accessToken})
 	}
 }
 

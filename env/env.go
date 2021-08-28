@@ -50,7 +50,6 @@ func (decoder *Decoder) parse() error {
 		rv := decoder.val.Elem().Field(i) // Field Reflect Value
 
 		tag := rt.Tag.Get(defaultStructTag) // Field Reflect Tag
-
 		if value := os.Getenv(tag); value != "" {
 			if err := decoder.convert(value, &rv); err != nil {
 				return err
