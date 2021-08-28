@@ -10,11 +10,10 @@ type ResponseData struct {
 	Data interface{} `json:"data"`
 }
 
-// Response is a generic and unified way to return a response to the client.
+// Success is a generic and unified way to return a response to the client.
 // Should be used when the response is considered "successful".
-// When we would like to respond with an error, it's better to just use http.Error with the
-// appropriate error http.status code.
-func Response(w http.ResponseWriter, code int, data ...interface{}) {
+// use Error when an error response is needed.
+func Success(w http.ResponseWriter, code int, data ...interface{}) {
 	response := ResponseData{data}
 
 	if len(data) > 0 {
@@ -27,11 +26,9 @@ func Response(w http.ResponseWriter, code int, data ...interface{}) {
 		return
 	}
 
-	// Set Headers
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
-	// Http status code
 	w.WriteHeader(code)
 
 	// When write fails, we most likely won't be able to respond to the client.
@@ -39,4 +36,11 @@ func Response(w http.ResponseWriter, code int, data ...interface{}) {
 		log.Println(err)
 		return
 	}
+}
+
+func Error(w http.ResponseWriter, code int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+
+	w.WriteHeader(code)
 }

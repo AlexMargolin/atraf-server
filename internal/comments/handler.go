@@ -42,22 +42,22 @@ func (handler *Handler) Create() http.HandlerFunc {
 		session := middleware.GetSessionContext(r)
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			w.WriteHeader(http.StatusBadRequest) // 400
+			rest.Error(w, http.StatusBadRequest) // 400
 			return
 		}
 
 		if err := handler.validator.Struct(request); err != nil {
-			w.WriteHeader(http.StatusUnprocessableEntity) // 422
+			rest.Error(w, http.StatusUnprocessableEntity) // 422
 			return
 		}
 
 		commentId, err := handler.service.New(session.AccountId, request.PostId, request.ParentId, request.CommentFields)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest) // 400
+			rest.Error(w, http.StatusBadRequest) // 400
 			return
 		}
 
-		rest.Response(w, http.StatusCreated, &CreateResponse{commentId}) // 201
+		rest.Success(w, http.StatusCreated, &CreateResponse{commentId}) // 201
 	}
 }
 
@@ -67,27 +67,27 @@ func (handler *Handler) Update() http.HandlerFunc {
 
 		commentId, err := uid.FromString(chi.URLParam(r, "comment_id"))
 		if err != nil {
-			w.WriteHeader(http.StatusUnprocessableEntity) // 422
+			rest.Error(w, http.StatusUnprocessableEntity) // 422
 			return
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&fields); err != nil {
-			w.WriteHeader(http.StatusBadRequest) // 400
+			rest.Error(w, http.StatusBadRequest) // 400
 			return
 		}
 
 		if err := handler.validator.Struct(fields); err != nil {
-			w.WriteHeader(http.StatusUnprocessableEntity) // 422
+			rest.Error(w, http.StatusUnprocessableEntity) // 422
 			return
 		}
 
 		commentId, err = handler.service.Update(commentId, fields)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest) // 400
+			rest.Error(w, http.StatusBadRequest) // 400
 			return
 		}
 
-		rest.Response(w, http.StatusOK, &UpdateResponse{commentId}) // 200
+		rest.Success(w, http.StatusOK, &UpdateResponse{commentId}) // 200
 	}
 }
 
@@ -95,17 +95,17 @@ func (handler *Handler) ReadMany() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		postId, err := uid.FromString(chi.URLParam(r, "post_id"))
 		if err != nil {
-			w.WriteHeader(http.StatusUnprocessableEntity) // 422
+			rest.Error(w, http.StatusUnprocessableEntity) // 422
 			return
 		}
 
 		comments, err := handler.service.Comments(postId)
 		if err != nil {
-			w.WriteHeader(http.StatusNotFound) // 404
+			rest.Error(w, http.StatusNotFound) // 404
 			return
 		}
 
-		rest.Response(w, http.StatusOK, &ReadManyResponse{comments}) // 200
+		rest.Success(w, http.StatusOK, &ReadManyResponse{comments}) // 200
 	}
 }
 

@@ -33,22 +33,22 @@ func (handler *Handler) Register() http.HandlerFunc {
 		var request RegisterRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			w.WriteHeader(http.StatusBadRequest) // 400
+			rest.Error(w, http.StatusBadRequest) // 400
 			return
 		}
 
 		if err := handler.validator.Struct(request); err != nil {
-			w.WriteHeader(http.StatusUnprocessableEntity) // 422
+			rest.Error(w, http.StatusUnprocessableEntity) // 422
 			return
 		}
 
 		_, err := handler.service.Register(request.Email, request.Password)
 		if err != nil {
-			w.WriteHeader(http.StatusConflict) // 409
+			rest.Error(w, http.StatusConflict) // 409
 			return
 		}
 
-		rest.Response(w, http.StatusCreated) // 201
+		rest.Success(w, http.StatusCreated) // 201
 	}
 }
 
@@ -57,28 +57,28 @@ func (handler *Handler) Login(tokenSecret string) http.HandlerFunc {
 		var request LoginRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			w.WriteHeader(http.StatusBadRequest) // 400
+			rest.Error(w, http.StatusBadRequest) // 400
 			return
 		}
 
 		if err := handler.validator.Struct(request); err != nil {
-			w.WriteHeader(http.StatusUnprocessableEntity) // 422
+			rest.Error(w, http.StatusUnprocessableEntity) // 422
 			return
 		}
 
 		account, err := handler.service.Login(request.Email, request.Password)
 		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized) // 401
+			rest.Error(w, http.StatusUnauthorized) // 401
 			return
 		}
 
 		accessToken, err := token.New(tokenSecret, account.Id)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError) // 500
+			rest.Error(w, http.StatusInternalServerError) // 500
 			return
 		}
 
-		rest.Response(w, http.StatusOK, &LoginResponse{accessToken})
+		rest.Success(w, http.StatusOK, &LoginResponse{accessToken})
 	}
 }
 
