@@ -17,10 +17,6 @@ type Decoder struct {
 	val reflect.Value
 }
 
-func NewDecoder() *Decoder {
-	return &Decoder{}
-}
-
 // Marshal receives a struct pointer and attempts to parse
 // defined environment variables to match its types
 //
@@ -90,4 +86,8 @@ func (Decoder) convert(rv *reflect.Value, v string) error {
 	}
 
 	return nil
+}
+
+func NewDecoder() *Decoder {
+	return &Decoder{}
 }

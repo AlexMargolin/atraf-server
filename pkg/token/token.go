@@ -1,6 +1,7 @@
 package token
 
 import (
+	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -11,6 +12,10 @@ import (
 type Claims = jwt.StandardClaims
 
 func New(secret string, subject uid.UID) (string, error) {
+	if secret == "" {
+		return "", errors.New("empty token secret provided")
+	}
+
 	claims := Claims{
 		Subject:   uid.ToString(subject),
 		IssuedAt:  time.Now().Unix(),
@@ -30,18 +35,15 @@ func New(secret string, subject uid.UID) (string, error) {
 }
 
 func Verify(secret string, unverifiedToken string) (Claims, error) {
-	var claims Claims
-
-	// Parse Token
-	token, err := jwt.ParseWithClaims(unverifiedToken, claims, signingSecret(secret))
+	token, err := jwt.ParseWithClaims(unverifiedToken, &Claims{}, signingSecret(secret))
 
 	// Validate token
-	claims, ok := token.Claims.(Claims)
+	claims, ok := token.Claims.(*Claims)
 	if !ok || !token.Valid {
-		return claims, err
+		return Claims{}, err
 	}
 
-	return claims, nil
+	return *claims, nil
 }
 
 func signingSecret(secret string) jwt.Keyfunc {

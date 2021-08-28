@@ -10,13 +10,13 @@ import (
 )
 
 type RegisterRequest struct {
-	Email    string `validate:"required,email"`
-	Password string `validate:"required"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
 }
 
 type LoginRequest struct {
-	Email    string `validate:"required,email"`
-	Password string `validate:"required"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
 }
 
 type LoginResponse struct {
@@ -34,20 +34,20 @@ func (handler *Handler) Register() http.HandlerFunc {
 
 		// Decode & Validate JSON
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			http.Error(w, "", http.StatusBadRequest) // 400
+			w.WriteHeader(http.StatusBadRequest) // 400
 			return
 		}
 
 		// Validate request fields
 		if err := handler.validator.Struct(request); err != nil {
-			http.Error(w, "", http.StatusUnprocessableEntity) // 422
+			w.WriteHeader(http.StatusUnprocessableEntity) // 422
 			return
 		}
 
 		// Register an account
 		_, err := handler.service.Register(request.Email, request.Password)
 		if err != nil {
-			http.Error(w, "", http.StatusConflict) // 409
+			w.WriteHeader(http.StatusConflict) // 409
 			return
 		}
 
@@ -62,27 +62,27 @@ func (handler *Handler) Login(tokenSecret string) http.HandlerFunc {
 
 		// Decode & Validate JSON
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			http.Error(w, "", http.StatusBadRequest) // 400
+			w.WriteHeader(http.StatusBadRequest) // 400
 			return
 		}
 
 		// Validate request
 		if err := handler.validator.Struct(request); err != nil {
-			http.Error(w, "", http.StatusUnprocessableEntity) // 422
+			w.WriteHeader(http.StatusUnprocessableEntity) // 422
 			return
 		}
 
 		// Account Login
 		account, err := handler.service.Login(request.Email, request.Password)
 		if err != nil {
-			http.Error(w, "", http.StatusUnauthorized) // 401
+			w.WriteHeader(http.StatusUnauthorized) // 401
 			return
 		}
 
 		// Issue Access Token
 		accessToken, err := token.New(tokenSecret, account.Id)
 		if err != nil {
-			http.Error(w, "", http.StatusInternalServerError) // 500
+			w.WriteHeader(http.StatusInternalServerError) // 500
 			return
 		}
 
