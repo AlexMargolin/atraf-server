@@ -39,30 +39,24 @@ func (handler *Handler) Create() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var fields PostFields
 
-		// Session Context
 		session := middleware.GetSessionContext(r)
 
-		// Decode & Validate JSON
 		if err := json.NewDecoder(r.Body).Decode(&fields); err != nil {
 			http.Error(w, "", http.StatusBadRequest) // 400
 			return
 		}
 
-		// Validate Payload
 		if err := handler.validator.Struct(fields); err != nil {
 			http.Error(w, "", http.StatusUnprocessableEntity) // 422
 			return
 		}
 
-		// Create a new Storage Entry
 		postId, err := handler.service.New(session.AccountId, fields)
 		if err != nil {
-
 			http.Error(w, "", http.StatusBadRequest) // 400
 			return
 		}
 
-		// Success
 		rest.Response(w, http.StatusCreated, &CreateResponse{postId}) // 201
 	}
 }
@@ -71,33 +65,28 @@ func (handler *Handler) Update() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var fields PostFields
 
-		// uid from string
 		postId, err := uid.FromString(chi.URLParam(r, "post_id"))
 		if err != nil {
 			http.Error(w, "", http.StatusUnprocessableEntity) // 422
 			return
 		}
 
-		// Decode & Validate JSON
 		if err := json.NewDecoder(r.Body).Decode(&fields); err != nil {
 			http.Error(w, "", http.StatusBadRequest) // 400
 			return
 		}
 
-		// Validate Payload
 		if err := handler.validator.Struct(fields); err != nil {
 			http.Error(w, "", http.StatusUnprocessableEntity) // 422
 			return
 		}
 
-		// Update existing Storage Entry
 		postId, err = handler.service.Update(postId, fields)
 		if err != nil {
 			http.Error(w, "", http.StatusBadRequest) // 400
 			return
 		}
 
-		// API Success
 		rest.Response(w, http.StatusOK, &UpdateResponse{postId}) // 200
 	}
 }
@@ -116,23 +105,19 @@ func (handler *Handler) ReadOne() http.HandlerFunc {
 			return
 		}
 
-		// Success
 		rest.Response(w, http.StatusOK, &ReadOneResponse{post}) // 200
 	}
 }
 
 func (handler *Handler) ReadMany() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Pagination Context
 		pagination := middleware.GetPaginationContext(r)
 
-		// Pagination Params validation
 		if pagination.PageNum < 1 || pagination.PerPage < 1 {
 			http.Error(w, "", http.StatusUnprocessableEntity) // 422
 			return
 		}
 
-		// Total posts count
 		total, err := handler.service.Total()
 		if err != nil {
 			http.Error(w, "", http.StatusBadRequest) // 400
@@ -146,7 +131,6 @@ func (handler *Handler) ReadMany() http.HandlerFunc {
 			return
 		}
 
-		// Fetch Posts list
 		posts, err := handler.service.Posts(pagination.PageNum, pagination.PerPage)
 		if err != nil {
 			http.Error(w, "", http.StatusBadRequest) // 400
@@ -156,12 +140,10 @@ func (handler *Handler) ReadMany() http.HandlerFunc {
 		// Determine whether next page will return any posts
 		hasNext := middleware.HasNextPage(pagination, total)
 
-		// API Success
 		rest.Response(w, http.StatusOK, &ReadManyResponse{total, hasNext, posts}) // 200
 	}
 }
 
-// NewHandler returns new Posts HTTP handler
 func NewHandler(service *Service, validator *validator.Validator) *Handler {
 	return &Handler{service, validator}
 }

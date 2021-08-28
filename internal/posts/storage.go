@@ -2,6 +2,9 @@ package posts
 
 import (
 	"database/sql"
+	"errors"
+	"fmt"
+	"time"
 
 	"quotes/pkg/uid"
 )
@@ -10,7 +13,7 @@ type SqlPost struct {
 	Id        uid.UID
 	UserId    uid.UID
 	Content   string
-	CreatedAt sql.NullTime
+	CreatedAt time.Time
 	UpdatedAt sql.NullTime
 	DeletedAt sql.NullTime
 }
@@ -86,8 +89,19 @@ func (storage *SqlStorage) Insert(userId uid.UID, fields PostFields) (uid.UID, e
 
 func (storage *SqlStorage) Update(postId uid.UID, fields PostFields) (uid.UID, error) {
 	query := "UPDATE posts SET content = ? WHERE id = ? LIMIT 1"
-	if _, err := storage.Db.Exec(query, fields.Content, postId); err != nil {
+
+	result, err := storage.Db.Exec(query, fields.Content, postId)
+	if err != nil {
 		return uid.Nil, err
+	}
+
+	ra, err := result.RowsAffected()
+	if err != nil {
+		return uid.Nil, err
+	}
+
+	if ra == 0 {
+		return uid.Nil, errors.New(fmt.Sprintf("unable to update post with the id [%s]", postId))
 	}
 
 	return postId, nil
@@ -99,7 +113,7 @@ func (SqlStorage) toPost(sqlPost SqlPost) Post {
 		Id:        sqlPost.Id,
 		UserId:    sqlPost.UserId,
 		Content:   sqlPost.Content,
-		CreatedAt: sqlPost.CreatedAt.Time,
+		CreatedAt: sqlPost.CreatedAt,
 		UpdatedAt: sqlPost.UpdatedAt.Time,
 	}
 }

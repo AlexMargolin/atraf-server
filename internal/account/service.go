@@ -14,7 +14,6 @@ type Account struct {
 	PasswordHash []byte
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
-	DeletedAt    time.Time
 }
 
 type Storage interface {
@@ -26,7 +25,6 @@ type Service struct {
 	storage Storage
 }
 
-// Register creates a new account using the provided email and password arguments
 func (service *Service) Register(email string, password string) (uid.UID, error) {
 	var accountId uid.UID
 
@@ -73,7 +71,6 @@ func (Service) comparePasswordHash(password string, passwordHash []byte) error {
 	return bcrypt.CompareHashAndPassword(passwordHash, []byte(password))
 }
 
-// NewService returns a new Account Service instance
 func NewService(storage Storage) *Service {
 	return &Service{storage}
 }

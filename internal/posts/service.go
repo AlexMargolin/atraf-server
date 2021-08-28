@@ -17,7 +17,7 @@ type Post struct {
 // PostFields is a struct representing all Post values
 // which can be modified by the client.
 type PostFields struct {
-	Content string `validate:"required"`
+	Content string `json:"content" validate:"required"`
 }
 
 type Storage interface {

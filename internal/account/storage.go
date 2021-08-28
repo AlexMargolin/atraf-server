@@ -2,6 +2,7 @@ package account
 
 import (
 	"database/sql"
+	"time"
 
 	"quotes/pkg/uid"
 )
@@ -10,7 +11,7 @@ type SqlAccount struct {
 	Id           uid.UID
 	Email        string
 	PasswordHash []byte
-	CreatedAt    sql.NullTime
+	CreatedAt    time.Time
 	UpdatedAt    sql.NullTime
 	DeletedAt    sql.NullTime
 }
@@ -19,7 +20,6 @@ type SqlStorage struct {
 	Db *sql.DB
 }
 
-// Insert create a new user in the database
 func (storage *SqlStorage) Insert(email string, passwordHash []byte) (uid.UID, error) {
 	accountId := uid.New()
 
@@ -31,8 +31,6 @@ func (storage *SqlStorage) Insert(email string, passwordHash []byte) (uid.UID, e
 	return accountId, nil
 }
 
-// ByEmail retrieves an account by its email address.
-// Returns an error when no account is found
 func (storage *SqlStorage) ByEmail(email string) (Account, error) {
 	var s SqlAccount
 
@@ -47,19 +45,16 @@ func (storage *SqlStorage) ByEmail(email string) (Account, error) {
 	return storage.toAccount(s), nil
 }
 
-// toAccount converts an SqlAccount into Account
 func (SqlStorage) toAccount(s SqlAccount) Account {
 	return Account{
 		Id:           s.Id,
 		Email:        s.Email,
 		PasswordHash: s.PasswordHash,
-		CreatedAt:    s.CreatedAt.Time,
+		CreatedAt:    s.CreatedAt,
 		UpdatedAt:    s.UpdatedAt.Time,
-		DeletedAt:    s.DeletedAt.Time,
 	}
 }
 
-// NewStorage returns a new MySQL Storage instance
 func NewStorage(db *sql.DB) *SqlStorage {
 	return &SqlStorage{db}
 }

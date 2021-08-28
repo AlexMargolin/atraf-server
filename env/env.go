@@ -24,16 +24,16 @@ type Decoder struct {
 // If defined, environment variables will overwrite the struct defaults.
 //
 // When needed additional type support, modify the convert func accordingly.
-func (d *Decoder) Marshal(s interface{}) error {
-	d.typ = reflect.TypeOf(s)
-	d.val = reflect.ValueOf(s)
+func (decoder *Decoder) Marshal(s interface{}) error {
+	decoder.typ = reflect.TypeOf(s)
+	decoder.val = reflect.ValueOf(s)
 
 	// Validate argument is a struct pointer
-	if d.val.Kind() != reflect.Ptr || d.val.Elem().Kind() != reflect.Struct || d.val.IsNil() {
+	if decoder.val.Kind() != reflect.Ptr || decoder.val.Elem().Kind() != reflect.Struct || decoder.val.IsNil() {
 		return errors.New("value must be a struct pointer")
 	}
 
-	err := d.parse()
+	err := decoder.parse()
 	if err != nil {
 		return err
 	}
@@ -44,13 +44,15 @@ func (d *Decoder) Marshal(s interface{}) error {
 // parse Attempts to locate an environment variable by the struct field Tag name.
 // When the environment variable is defined, attempt
 // to convert it to its corresponding struct type.
-func (d *Decoder) parse() error {
-	for i := 0; i < d.val.Elem().NumField(); i++ {
-		rt := d.typ.Elem().Field(i)
-		rv := d.val.Elem().Field(i)
+func (decoder *Decoder) parse() error {
+	for i := 0; i < decoder.val.Elem().NumField(); i++ {
+		rt := decoder.typ.Elem().Field(i) // Field Reflect Type
+		rv := decoder.val.Elem().Field(i) // Field Reflect Value
 
-		if value := os.Getenv(rt.Tag.Get(defaultStructTag)); value != "" {
-			if err := d.convert(&rv, value); err != nil {
+		tag := rt.Tag.Get(defaultStructTag) // Field Reflect Tag
+
+		if value := os.Getenv(tag); value != "" {
+			if err := decoder.convert(value, &rv); err != nil {
 				return err
 			}
 		}
@@ -61,9 +63,8 @@ func (d *Decoder) parse() error {
 
 // convert attempts to convert a given string value(v)
 // to the reflected struct field type(*rv)
-func (Decoder) convert(rv *reflect.Value, v string) error {
+func (Decoder) convert(v string, rv *reflect.Value) error {
 	switch rv.Type().Kind() {
-
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		value, err := strconv.ParseInt(v, 10, 64)
 		if err != nil || rv.OverflowInt(value) {

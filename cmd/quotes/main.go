@@ -8,6 +8,7 @@ import (
 	"quotes/app"
 	"quotes/env"
 	"quotes/internal/account"
+	"quotes/internal/comments"
 	"quotes/internal/posts"
 	"quotes/pkg/middleware"
 	"quotes/pkg/validator"
@@ -25,15 +26,7 @@ type Config struct {
 }
 
 func main() {
-	config, err := NewConfig(&Config{
-		DbHost:      "localhost",
-		DbPort:      "3306",
-		DbUser:      "root",
-		DbPass:      "",
-		DbName:      "quotes",
-		ServerPort:  "9000",
-		TokenSecret: "abcd",
-	})
+	config, err := NewConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -64,6 +57,11 @@ func main() {
 	postsService := posts.NewService(postsStorage)
 	postsHandler := posts.NewHandler(postsService, validate)
 
+	// Comments
+	commentsStorage := comments.NewStorage(sql)
+	commentsService := comments.NewService(commentsStorage)
+	commentsHandler := comments.NewHandler(commentsService, validate)
+
 	// HTTP Router
 	router := chi.NewRouter()
 
@@ -89,6 +87,13 @@ func main() {
 			router.Get("/{post_id}", postsHandler.ReadOne())                     // Get Post
 			router.With(middleware.Pagination).Get("/", postsHandler.ReadMany()) // Get Posts
 		})
+
+		// Comments
+		router.Route("/comments", func(router chi.Router) {
+			router.Post("/", commentsHandler.Create())            // Create Comment
+			router.Get("/{post_id}", commentsHandler.ReadMany())  // Get Comments
+			router.Put("/{comment_id}", commentsHandler.Update()) // Update Comment
+		})
 	})
 
 	// Server
@@ -103,12 +108,22 @@ func main() {
 
 // NewConfig creates default config and
 // assigns defined environment variables
-func NewConfig(c *Config) (*Config, error) {
+func NewConfig() (*Config, error) {
+	config := &Config{
+		DbHost:      "localhost",
+		DbPort:      "3306",
+		DbUser:      "root",
+		DbPass:      "",
+		DbName:      "quotes",
+		ServerPort:  "8080",
+		TokenSecret: "123123123",
+	}
+
 	// Marshal Environment Variables
-	err := env.NewDecoder().Marshal(c)
+	err := env.NewDecoder().Marshal(config)
 	if err != nil {
 		return nil, err
 	}
 
-	return c, nil
+	return config, nil
 }
