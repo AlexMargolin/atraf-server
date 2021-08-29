@@ -1,0 +1,10 @@
+{
+  "dbhost": "",
+  "dbport": "",
+  "dbuser": "",
+  "dbpass": "",
+  "dbname": "",
+  "serverport": "",
+  "serverhost": "",
+  "tokensecret": ""
+}

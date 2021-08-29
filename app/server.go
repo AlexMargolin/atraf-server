@@ -6,13 +6,14 @@ import (
 )
 
 type ServerConfig struct {
-	Host string
-	Port string
+	Host    string
+	Port    string
+	Handler http.Handler
 }
 
-func RunServer(c *ServerConfig, h http.Handler) error {
+func Run(c *ServerConfig) error {
 	addr := net.JoinHostPort(c.Host, c.Port)
-	if err := http.ListenAndServe(addr, h); err != nil {
+	if err := http.ListenAndServe(addr, c.Handler); err != nil {
 		return err
 	}
 	return nil

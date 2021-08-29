@@ -6,7 +6,6 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"quotes/app"
-	"quotes/env"
 	"quotes/internal/account"
 	"quotes/internal/comments"
 	"quotes/internal/posts"
@@ -15,31 +14,31 @@ import (
 )
 
 type Config struct {
-	DbHost      string `env:"MYSQL_HOST"`   // Database host name
-	DbPort      string `env:"MYSQL_PORT"`   // Database port
-	DbUser      string `env:"MYSQL_USER"`   // Database username
-	DbPass      string `env:"MYSQL_PASS"`   // Database user password
-	DbName      string `env:"MYSQL_NAME"`   // Database DB Name
+	DbHost      string `env:"DB_HOST"`      // Database host name
+	DbPort      string `env:"DB_PORT" `     // Database port
+	DbUser      string `env:"DB_USER"`      // Database username
+	DbPass      string `env:"DB_PASS"`      // Database user password
+	DbName      string `env:"DB_NAME"`      // Database DB Name
 	ServerPort  string `env:"SERVER_PORT"`  // Server Port
 	ServerHost  string `env:"SERVER_HOST"`  // Server Port
 	TokenSecret string `env:"TOKEN_SECRET"` // Authentication Token Signing Secret
 }
 
 func main() {
-	config, err := NewConfig()
-	if err != nil {
+	// App Config
+	var config Config
+	if err := app.NewConfig().Decode(&config); err != nil {
 		log.Fatal(err)
 	}
 
-	// Sql Database
-	sqlConfig := &app.SqlConfig{
+	// Database
+	sql, err := app.SqlConnection(&app.SqlConfig{
 		Host: config.DbHost,
 		Port: config.DbPort,
 		User: config.DbUser,
 		Pass: config.DbPass,
 		Name: config.DbName,
-	}
-	sql, err := app.SqlConnection(sqlConfig)
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -97,33 +96,12 @@ func main() {
 	})
 
 	// Server
-	srvConfig := &app.ServerConfig{
+	err = app.Run(&app.ServerConfig{
 		Host: config.ServerHost,
 		Port: config.ServerPort,
-	}
-	if err = app.RunServer(srvConfig, router); err != nil {
+	})
+
+	if err != nil {
 		log.Fatal(err)
 	}
-}
-
-// NewConfig creates default config and
-// assigns defined environment variables
-func NewConfig() (*Config, error) {
-	config := &Config{
-		DbHost:      "localhost",
-		DbPort:      "3306",
-		DbUser:      "root",
-		DbPass:      "",
-		DbName:      "quotes",
-		ServerPort:  "8080",
-		TokenSecret: "123123123",
-	}
-
-	// Marshal Environment Variables
-	err := env.NewDecoder().Marshal(config)
-	if err != nil {
-		return nil, err
-	}
-
-	return config, nil
 }
