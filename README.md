@@ -2,6 +2,7 @@
 
 1. validate jwt alg
 2. validate type inference
+3. session context - change accountid to userid
 
 # App Configuration
 

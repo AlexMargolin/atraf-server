@@ -81,17 +81,17 @@ func main() {
 
 		// Posts
 		router.Route("/posts", func(router chi.Router) {
-			router.Post("/", postsHandler.Create())                              // Create Post
-			router.Put("/{post_id}", postsHandler.Update())                      // Update Post
-			router.Get("/{post_id}", postsHandler.ReadOne())                     // Get Post
-			router.With(middleware.Pagination).Get("/", postsHandler.ReadMany()) // Get Posts
+			router.Post("/", postsHandler.Create())
+			router.Put("/{post_id}", postsHandler.Update())
+			router.Get("/{post_id}", postsHandler.ReadOne())
+			router.With(middleware.Pagination).Get("/", postsHandler.ReadMany())
 		})
 
 		// Comments
 		router.Route("/comments", func(router chi.Router) {
-			router.Post("/", commentsHandler.Create())            // Create Comment
-			router.Get("/{post_id}", commentsHandler.ReadMany())  // Get Comments
-			router.Put("/{comment_id}", commentsHandler.Update()) // Update Comment
+			router.Post("/", commentsHandler.Create())
+			router.Get("/{post_id}", commentsHandler.ReadMany())
+			router.Put("/{comment_id}", commentsHandler.Update())
 		})
 	})
 
@@ -101,7 +101,6 @@ func main() {
 		Port:    config.ServerPort,
 		Handler: router,
 	})
-
 	if err != nil {
 		log.Fatal(err)
 	}
