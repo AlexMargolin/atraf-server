@@ -97,8 +97,9 @@ func main() {
 
 	// Server
 	err = app.Run(&app.ServerConfig{
-		Host: config.ServerHost,
-		Port: config.ServerPort,
+		Host:    config.ServerHost,
+		Port:    config.ServerPort,
+		Handler: router,
 	})
 
 	if err != nil {

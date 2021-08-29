@@ -20,13 +20,15 @@ type Decoder struct{}
 // Assignment Order (High Priority -> Low Priority):
 // 1. Environment Variable -> Configuration File -> Struct Defaults
 func (decoder *Decoder) Decode(v interface{}) error {
-	decoder.ApplyJson(v)
+	// unmarshal json config
+	decoder.unmarshalJson(v)
 
-	return decoder.unmarshal(v)
+	// unmarshal env variables
+	return decoder.unmarshalEnv(v)
 }
 
-// ApplyJson attempts to unmarshal the json object onto the config struct
-func (decoder *Decoder) ApplyJson(v interface{}) {
+// unmarshalJson attempts to unmarshal the json object onto the config struct
+func (decoder *Decoder) unmarshalJson(v interface{}) {
 	file, err := os.Open(defaultConfFile)
 	if err != nil {
 		return
@@ -38,7 +40,7 @@ func (decoder *Decoder) ApplyJson(v interface{}) {
 	}
 }
 
-func (decoder *Decoder) unmarshal(v interface{}) error {
+func (decoder *Decoder) unmarshalEnv(v interface{}) error {
 	typ := reflect.TypeOf(v)
 	val := reflect.ValueOf(v)
 
@@ -60,10 +62,6 @@ func (decoder *Decoder) unmarshal(v interface{}) error {
 	}
 
 	return nil
-}
-
-func (decoder *Decoder) parseLine() {
-
 }
 
 // Convert attempts to convert a given string value(v)
