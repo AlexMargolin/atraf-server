@@ -75,9 +75,9 @@ func (postgres *Postgres) Insert(userId uid.UID, postId uid.UID, parentId uid.UI
 }
 
 func (postgres *Postgres) Update(commentId uid.UID, fields CommentFields) (uid.UID, error) {
-	query := `UPDATE comments SET content = $1 WHERE uuid = $2`
+	query := `UPDATE comments SET content = $2 WHERE uuid = $1`
 
-	result, err := postgres.Db.Exec(query, fields.Content, commentId)
+	result, err := postgres.Db.Exec(query, commentId, fields.Content)
 	if err != nil {
 		return uid.Nil, err
 	}
