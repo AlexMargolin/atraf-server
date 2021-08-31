@@ -10,14 +10,14 @@ import (
 )
 
 type SqlComment struct {
-	Uuid      uid.UID
-	UserId    uid.UID
-	PostId    uid.UID
-	ParentId  uid.UID
-	Content   string
-	CreatedAt time.Time
-	UpdatedAt sql.NullTime
-	DeletedAt sql.NullTime
+	Uuid       uid.UID
+	UserUuid   uid.UID
+	PostUuid   uid.UID
+	ParentUuid uid.UID
+	Content    string
+	CreatedAt  time.Time
+	UpdatedAt  sql.NullTime
+	DeletedAt  sql.NullTime
 }
 
 type SqlStorage struct {
@@ -38,7 +38,7 @@ func (storage *SqlStorage) Many(postId uid.UID) ([]Comment, error) {
 	for rows.Next() {
 		var s SqlComment
 
-		err = rows.Scan(&s.Uuid, &s.UserId, &s.PostId, &s.ParentId, &s.Content, &s.CreatedAt, &s.UpdatedAt, &s.DeletedAt)
+		err = rows.Scan(&s.Uuid, &s.UserUuid, &s.PostUuid, &s.ParentUuid, &s.Content, &s.CreatedAt, &s.UpdatedAt, &s.DeletedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -83,9 +83,9 @@ func (storage *SqlStorage) Update(commentId uid.UID, fields CommentFields) (uid.
 func toComment(sqlComment SqlComment) Comment {
 	return Comment{
 		Id:        sqlComment.Uuid,
-		UserId:    sqlComment.UserId,
-		PostId:    sqlComment.PostId,
-		ParentId:  sqlComment.ParentId,
+		UserId:    sqlComment.UserUuid,
+		PostId:    sqlComment.PostUuid,
+		ParentId:  sqlComment.ParentUuid,
 		Content:   sqlComment.Content,
 		CreatedAt: sqlComment.CreatedAt,
 		UpdatedAt: sqlComment.UpdatedAt.Time,

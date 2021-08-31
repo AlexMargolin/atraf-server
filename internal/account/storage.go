@@ -8,7 +8,7 @@ import (
 )
 
 type SqlAccount struct {
-	Id           uid.UID
+	Uuid         uid.UID
 	Email        string
 	PasswordHash []byte
 	CreatedAt    time.Time
@@ -37,7 +37,7 @@ func (storage *SqlStorage) ByEmail(email string) (Account, error) {
 	query := "SELECT * FROM accounts WHERE email = ? LIMIT 1"
 	row := storage.Db.QueryRow(query, email)
 
-	err := row.Scan(&s.Id, &s.Email, &s.PasswordHash, &s.CreatedAt, &s.UpdatedAt, &s.DeletedAt)
+	err := row.Scan(&s.Uuid, &s.Email, &s.PasswordHash, &s.CreatedAt, &s.UpdatedAt, &s.DeletedAt)
 	if err != nil {
 		return Account{}, err
 	}
@@ -47,7 +47,7 @@ func (storage *SqlStorage) ByEmail(email string) (Account, error) {
 
 func (SqlStorage) toAccount(s SqlAccount) Account {
 	return Account{
-		Id:           s.Id,
+		Id:           s.Uuid,
 		Email:        s.Email,
 		PasswordHash: s.PasswordHash,
 		CreatedAt:    s.CreatedAt,
