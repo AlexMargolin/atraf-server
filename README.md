@@ -19,6 +19,7 @@
 17. validate type inference
 18. session context - change accountid to userid
 19. better comments
+20. test user inputs
 
 # Features
 

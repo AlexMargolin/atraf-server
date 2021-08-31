@@ -8,26 +8,19 @@ import (
 	"os"
 	"time"
 
-	"github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
 )
 
 // DBConnection returns a new sql.DB instance
 func DBConnection() (*sql.DB, error) {
-	addr := net.JoinHostPort(
-		os.Getenv("MYSQL_HOST"),
-		os.Getenv("MYSQL_PORT"),
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_PORT"),
+		os.Getenv("DB_USER"),
+		os.Getenv("DB_PASS"),
+		os.Getenv("DB_NAME"),
 	)
-
-	config := &mysql.Config{
-		Addr:                 addr,
-		User:                 os.Getenv("MYSQL_USER"),
-		Passwd:               os.Getenv("MYSQL_PASS"),
-		DBName:               os.Getenv("MYSQL_NAME"),
-		ParseTime:            true,
-		AllowNativePasswords: true,
-	}
-
-	db, err := sql.Open("mysql", config.FormatDSN())
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		return nil, err
 	}

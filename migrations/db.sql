@@ -1,44 +1,35 @@
-# Posts
-DROP TABLE IF EXISTS `posts`;
-CREATE TABLE `posts`
+DROP TABLE IF EXISTS public.accounts;
+CREATE TABLE IF NOT EXISTS public.accounts
 (
-    `uuid`       varchar(36) NOT NULL,
-    `user_uuid`  varchar(36) NOT NULL,
-    `content`    longtext    NOT NULL,
-    `created_at` timestamp   NOT NULL DEFAULT current_timestamp(),
-    `updated_at` timestamp   NULL     DEFAULT NULL ON UPDATE current_timestamp(),
-    `deleted_at` timestamp   NULL     DEFAULT NULL,
-    UNIQUE KEY `uuid` (`uuid`)
-) ENGINE = InnoDB;
+    uuid          uuid      NOT NULL PRIMARY KEY default gen_random_uuid(),
+    email         text      NOT NULL UNIQUE,
+    password_hash text      NOT NULL,
+    created_at    timestamp NOT NULL             default current_timestamp,
+    updated_at    timestamp,
+    deleted_at    timestamp
+);
 
 
-# Accounts
-DROP TABLE IF EXISTS `accounts`;
-CREATE TABLE `accounts`
+DROP TABLE IF EXISTS public.posts;
+CREATE TABLE IF NOT EXISTS public.posts
 (
-    `uuid`          VARCHAR(36)                           NOT NULL,
-    `email`         VARCHAR(255)                          NOT NULL,
-    `password_hash` VARCHAR(255)                          NOT NULL,
-    `created_at`    TIMESTAMP                             NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at`    TIMESTAMP on update CURRENT_TIMESTAMP NULL     DEFAULT NULL,
-    `deleted_at`    TIMESTAMP                             NULL     DEFAULT NULL,
-    PRIMARY KEY (`uuid`),
-    UNIQUE (`email`)
-) ENGINE = InnoDB;
+    uuid       uuid      NOT NULL PRIMARY KEY default gen_random_uuid(),
+    user_uuid  uuid      NOT NULL,
+    content    text      NOT NULL,
+    created_at timestamp NOT NULL             default current_timestamp,
+    updated_at timestamp,
+    deleted_at timestamp
+);
 
-# Comments
-DROP TABLE IF EXISTS `comments`;
-CREATE TABLE `comments`
+DROP TABLE IF EXISTS public.comments;
+CREATE TABLE IF NOT EXISTS public.comments
 (
-    `uuid`        VARCHAR(36)                           NOT NULL,
-    `user_uuid`   VARCHAR(36)                           NOT NULL,
-    `post_uuid`   VARCHAR(36)                           NOT NULL,
-    `parent_uuid` VARCHAR(36)                           NOT NULL,
-    `content`     LONGTEXT                              NOT NULL,
-    `created_at`  TIMESTAMP                             NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_atd` TIMESTAMP on update CURRENT_TIMESTAMP NULL     DEFAULT NULL,
-    `deleted_at`  TIMESTAMP                             NULL     DEFAULT NULL,
-    PRIMARY KEY (`uuid`),
-    INDEX (`user_uuid`),
-    INDEX (`post_uuid`)
-) ENGINE = InnoDB;
+    uuid        uuid      NOT NULL PRIMARY KEY default gen_random_uuid(),
+    user_uuid   uuid      NOT NULL, /*index*/
+    post_uuid   uuid      NOT NULL, /*index*/
+    parent_uuid uuid      NOT NULL,
+    content     text,
+    created_at  timestamp NOT NULL             default current_timestamp,
+    updated_at  timestamp,
+    deleted_at  timestamp
+);

@@ -7,7 +7,7 @@ import (
 	"quotes/pkg/uid"
 )
 
-type SqlAccount struct {
+type PostgresAccount struct {
 	Uuid         uid.UID
 	Email        string
 	PasswordHash []byte
@@ -16,45 +16,58 @@ type SqlAccount struct {
 	DeletedAt    sql.NullTime
 }
 
-type SqlStorage struct {
+type Postgres struct {
 	Db *sql.DB
 }
 
-func (storage *SqlStorage) Insert(email string, passwordHash []byte) (uid.UID, error) {
-	accountId := uid.New()
+func (postgres *Postgres) Insert(email string, passwordHash []byte) (uid.UID, error) {
+	var uuid uid.UID
 
-	query := "INSERT INTO accounts (uuid, email, password_hash) VALUES (?, ?, ?)"
-	if _, err := storage.Db.Exec(query, accountId, email, passwordHash); err != nil {
-		return uid.Nil, err
+	query := `INSERT INTO accounts (email, password_hash) 
+			  VALUES ($1, $2)
+			  RETURNING uuid`
+
+	if err := postgres.Db.QueryRow(query, email, passwordHash).Scan(&uuid); err != nil {
+		return uuid, err
 	}
 
-	return accountId, nil
+	return uuid, nil
 }
 
-func (storage *SqlStorage) ByEmail(email string) (Account, error) {
-	var s SqlAccount
+func (postgres *Postgres) ByEmail(email string) (Account, error) {
+	var pa PostgresAccount
 
-	query := "SELECT * FROM accounts WHERE email = ? LIMIT 1"
-	row := storage.Db.QueryRow(query, email)
+	query := `SELECT uuid, email, password_hash, created_at, updated_at, deleted_at 
+			  FROM accounts 
+			  WHERE email = $1
+			  LIMIT 1`
 
-	err := row.Scan(&s.Uuid, &s.Email, &s.PasswordHash, &s.CreatedAt, &s.UpdatedAt, &s.DeletedAt)
+	row := postgres.Db.QueryRow(query, email)
+	err := row.Scan(
+		&pa.Uuid,
+		&pa.Email,
+		&pa.PasswordHash,
+		&pa.CreatedAt,
+		&pa.UpdatedAt,
+		&pa.DeletedAt,
+	)
 	if err != nil {
 		return Account{}, err
 	}
 
-	return storage.toAccount(s), nil
+	return postgres.toAccount(pa), nil
 }
 
-func (SqlStorage) toAccount(s SqlAccount) Account {
+func (Postgres) toAccount(pa PostgresAccount) Account {
 	return Account{
-		Id:           s.Uuid,
-		Email:        s.Email,
-		PasswordHash: s.PasswordHash,
-		CreatedAt:    s.CreatedAt,
-		UpdatedAt:    s.UpdatedAt.Time,
+		Id:           pa.Uuid,
+		Email:        pa.Email,
+		PasswordHash: pa.PasswordHash,
+		CreatedAt:    pa.CreatedAt,
+		UpdatedAt:    pa.UpdatedAt.Time,
 	}
 }
 
-func NewStorage(db *sql.DB) *SqlStorage {
-	return &SqlStorage{db}
+func NewStorage(db *sql.DB) *Postgres {
+	return &Postgres{db}
 }

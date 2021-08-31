@@ -9,116 +9,137 @@ import (
 	"quotes/pkg/uid"
 )
 
-type SqlPost struct {
+type PostgresPost struct {
 	Uuid      uid.UID
-	UserId    uid.UID
+	UserUuid  uid.UID
 	Content   string
 	CreatedAt time.Time
 	UpdatedAt sql.NullTime
 	DeletedAt sql.NullTime
 }
 
-type SqlStorage struct {
+type Postgres struct {
 	Db *sql.DB
 }
 
-func (storage *SqlStorage) Count() (int, error) {
+func (postgres Postgres) Count() (int, error) {
 	var count int
 
-	query := "SELECT COUNT(uuid) FROM posts"
-	row := storage.Db.QueryRow(query)
+	query := `SELECT COUNT(*) FROM posts`
 
-	err := row.Scan(&count)
-	if err != nil {
+	row := postgres.Db.QueryRow(query)
+	if err := row.Scan(&count); err != nil {
 		return count, err
 	}
 
 	return count, nil
 }
 
-func (storage *SqlStorage) One(postId uid.UID) (Post, error) {
-	var s SqlPost
+func (postgres Postgres) One(postId uid.UID) (Post, error) {
+	var pp PostgresPost
 
-	query := "SELECT uuid, user_uuid, content, created_at, updated_at, deleted_at FROM posts WHERE uuid = ? LIMIT 1"
-	row := storage.Db.QueryRow(query, postId)
+	query := `SELECT uuid, user_uuid, content, created_at, updated_at, deleted_at 
+			  FROM posts 
+			  WHERE uuid = $1 
+			  LIMIT 1`
 
-	err := row.Scan(&s.Uuid, &s.UserId, &s.Content, &s.CreatedAt, &s.UpdatedAt, &s.DeletedAt)
+	row := postgres.Db.QueryRow(query, postId)
+	err := row.Scan(
+		&pp.Uuid,
+		&pp.UserUuid,
+		&pp.Content,
+		&pp.CreatedAt,
+		&pp.UpdatedAt,
+		&pp.DeletedAt,
+	)
 	if err != nil {
 		return Post{}, err
 	}
 
-	return storage.toPost(s), nil
+	return postgres.toPost(pp), nil
 }
 
-func (storage *SqlStorage) Many(offset int, limit int) ([]Post, error) {
+func (postgres Postgres) Many(offset int, limit int) ([]Post, error) {
 	posts := make([]Post, 0)
 
-	query := "SELECT uuid, user_uuid, content, created_at, updated_at, deleted_at FROM posts LIMIT ? OFFSET ?"
-	rows, err := storage.Db.Query(query, limit, offset)
+	query := `SELECT uuid, user_uuid, content, created_at, updated_at, deleted_at 
+			  FROM posts	
+			  ORDER BY created_at DESC 
+			  OFFSET $1 LIMIT $2`
+
+	rows, err := postgres.Db.Query(query, offset, limit)
 	if err != nil {
 		return nil, err
 	}
-
 	defer rows.Close()
 
-	// Scan Rows
 	for rows.Next() {
-		var s SqlPost
+		var s PostgresPost
 
-		err = rows.Scan(&s.Uuid, &s.UserId, &s.Content, &s.CreatedAt, &s.UpdatedAt, &s.DeletedAt)
+		err = rows.Scan(
+			&s.Uuid,
+			&s.UserUuid,
+			&s.Content,
+			&s.CreatedAt,
+			&s.UpdatedAt,
+			&s.DeletedAt,
+		)
 		if err != nil {
 			return nil, err
 		}
 
-		posts = append(posts, storage.toPost(s))
+		posts = append(posts, postgres.toPost(s))
 	}
 
 	return posts, nil
 }
 
-func (storage *SqlStorage) Insert(userId uid.UID, fields PostFields) (uid.UID, error) {
-	postId := uid.New()
+func (postgres Postgres) Insert(userId uid.UID, fields PostFields) (uid.UID, error) {
+	var uuid uid.UID
 
-	query := "INSERT INTO posts (uuid, user_uuid, content) VALUES (?, ?, ?)"
-	if _, err := storage.Db.Exec(query, postId, userId, fields.Content); err != nil {
+	query := `INSERT INTO posts (user_uuid, content) 
+			  VALUES ($1, $2) 
+			  RETURNING uuid`
+
+	row := postgres.Db.QueryRow(query, userId, fields.Content)
+
+	err := row.Scan(&uuid)
+	if err != nil {
+		return uuid, err
+	}
+
+	return uuid, nil
+}
+
+func (postgres Postgres) Update(postId uid.UID, fields PostFields) (uid.UID, error) {
+	query := `UPDATE posts 
+			  SET content = $1 
+			  WHERE uuid = $2`
+
+	result, err := postgres.Db.Exec(query, fields.Content, postId)
+	if err != nil {
 		return uid.Nil, err
+	}
+
+	if rows, err := result.RowsAffected(); err != nil || rows == 0 {
+		return uid.Nil, errors.New(fmt.Sprintf("0 rows affected when updating Post[%s]", postId))
 	}
 
 	return postId, nil
 }
 
-func (storage *SqlStorage) Update(postId uid.UID, fields PostFields) (uid.UID, error) {
-	query := "UPDATE posts SET content = ? WHERE uuid = ? LIMIT 1"
-
-	result, err := storage.Db.Exec(query, fields.Content, postId)
-	if err != nil {
-		return uid.Nil, err
-	}
-
-	ra, err := result.RowsAffected()
-	if err != nil {
-		return uid.Nil, err
-	}
-
-	if ra == 0 {
-		return uid.Nil, errors.New(fmt.Sprintf("unable to update post with the id [%s]", postId))
-	}
-
-	return postId, nil
-}
-
-// Receives a SqlPost and returns a Post
-func (SqlStorage) toPost(sqlPost SqlPost) Post {
+// Receives a PostgresPost and returns a Post
+func (Postgres) toPost(pp PostgresPost) Post {
 	return Post{
-		Id:        sqlPost.Uuid,
-		UserId:    sqlPost.UserId,
-		Content:   sqlPost.Content,
-		CreatedAt: sqlPost.CreatedAt,
-		UpdatedAt: sqlPost.UpdatedAt.Time,
+		Id:        pp.Uuid,
+		UserId:    pp.UserUuid,
+		Content:   pp.Content,
+		CreatedAt: pp.CreatedAt,
+		UpdatedAt: pp.UpdatedAt.Time,
 	}
 }
 
 // NewStorage returns a new MySQL Storage instance
-func NewStorage(db *sql.DB) *SqlStorage {
-	return &SqlStorage{db}
+func NewStorage(db *sql.DB) *Postgres {
+	return &Postgres{db}
 }

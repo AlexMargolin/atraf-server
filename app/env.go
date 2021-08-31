@@ -8,11 +8,11 @@ import (
 )
 
 var RequiredKeys = []string{
-	"MYSQL_HOST",
-	"MYSQL_PORT",
-	"MYSQL_USER",
-	"MYSQL_PASS",
-	"MYSQL_NAME",
+	"DB_HOST",
+	"DB_PORT",
+	"DB_USER",
+	"DB_PASS",
+	"DB_NAME",
 	"SERVER_PORT",
 	"SERVER_HOST",
 	"ACCESS_TOKEN_SECRET",
