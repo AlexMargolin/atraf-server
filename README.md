@@ -20,6 +20,7 @@
 18. session context - change accountid to userid
 19. better comments
 20. test user inputs
+21. refactor pagination = replace offset with cursor
 
 # Features
 

@@ -27,9 +27,7 @@ type Postgres struct {
 func (postgres *Postgres) Many(postId uid.UID) ([]Comment, error) {
 	comments := make([]Comment, 0)
 
-	query := `SELECT * FROM comments 
-			  WHERE post_uuid = $1 
-			  ORDER BY created_at`
+	query := "SELECT uuid, user_uuid, post_uuid, parent_uuid, content, created_at, updated_at, deleted_at FROM comments WHERE post_uuid = $1 ORDER BY created_at"
 
 	rows, err := postgres.Db.Query(query, postId)
 	if err != nil {
@@ -64,12 +62,12 @@ func (postgres *Postgres) Many(postId uid.UID) ([]Comment, error) {
 func (postgres *Postgres) Insert(userId uid.UID, postId uid.UID, parentId uid.UID, fields CommentFields) (uid.UID, error) {
 	var uuid uid.UID
 
-	query := `INSERT INTO comments (user_uuid, post_uuid, parent_uuid, content) 
-			  VALUES ($1, $2, $3, $4)
-			  RETURNING uuid`
+	query := "INSERT INTO comments (user_uuid, post_uuid, parent_uuid, content) VALUES ($1, $2, $3, $4) RETURNING uuid"
 
-	row := postgres.Db.QueryRow(query, userId, postId, parentId, fields.Content)
-	if err := row.Scan(&uuid); err != nil {
+	err := postgres.Db.QueryRow(query, userId, postId, parentId, fields.Content).Scan(
+		&uuid,
+	)
+	if err != nil {
 		return uuid, err
 	}
 
@@ -77,9 +75,7 @@ func (postgres *Postgres) Insert(userId uid.UID, postId uid.UID, parentId uid.UI
 }
 
 func (postgres *Postgres) Update(commentId uid.UID, fields CommentFields) (uid.UID, error) {
-	query := `UPDATE comments 
-			  SET content = $1 
-			  WHERE uuid = $2`
+	query := `UPDATE comments SET content = $1 WHERE uuid = $2`
 
 	result, err := postgres.Db.Exec(query, fields.Content, commentId)
 	if err != nil {

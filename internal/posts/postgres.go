@@ -25,10 +25,12 @@ type Postgres struct {
 func (postgres Postgres) Count() (int, error) {
 	var count int
 
-	query := `SELECT COUNT(*) FROM posts`
+	query := `SELECT COUNT(uuid) FROM posts`
 
-	row := postgres.Db.QueryRow(query)
-	if err := row.Scan(&count); err != nil {
+	err := postgres.Db.QueryRow(query).Scan(
+		&count,
+	)
+	if err != nil {
 		return count, err
 	}
 
@@ -38,13 +40,9 @@ func (postgres Postgres) Count() (int, error) {
 func (postgres Postgres) One(postId uid.UID) (Post, error) {
 	var pp PostgresPost
 
-	query := `SELECT uuid, user_uuid, content, created_at, updated_at, deleted_at 
-			  FROM posts 
-			  WHERE uuid = $1 
-			  LIMIT 1`
+	query := "SELECT uuid, user_uuid, content, created_at, updated_at, deleted_at FROM posts WHERE uuid = $1 LIMIT 1"
 
-	row := postgres.Db.QueryRow(query, postId)
-	err := row.Scan(
+	err := postgres.Db.QueryRow(query, postId).Scan(
 		&pp.Uuid,
 		&pp.UserUuid,
 		&pp.Content,
@@ -62,10 +60,7 @@ func (postgres Postgres) One(postId uid.UID) (Post, error) {
 func (postgres Postgres) Many(offset int, limit int) ([]Post, error) {
 	posts := make([]Post, 0)
 
-	query := `SELECT uuid, user_uuid, content, created_at, updated_at, deleted_at 
-			  FROM posts	
-			  ORDER BY created_at DESC 
-			  OFFSET $1 LIMIT $2`
+	query := "SELECT uuid, user_uuid, content, created_at, updated_at, deleted_at FROM posts ORDER BY created_at DESC OFFSET $1 LIMIT $2"
 
 	rows, err := postgres.Db.Query(query, offset, limit)
 	if err != nil {
@@ -97,13 +92,11 @@ func (postgres Postgres) Many(offset int, limit int) ([]Post, error) {
 func (postgres Postgres) Insert(userId uid.UID, fields PostFields) (uid.UID, error) {
 	var uuid uid.UID
 
-	query := `INSERT INTO posts (user_uuid, content) 
-			  VALUES ($1, $2) 
-			  RETURNING uuid`
+	query := "INSERT INTO posts (user_uuid, content) VALUES ($1, $2) RETURNING uuid"
 
-	row := postgres.Db.QueryRow(query, userId, fields.Content)
-
-	err := row.Scan(&uuid)
+	err := postgres.Db.QueryRow(query, userId, fields.Content).Scan(
+		&uuid,
+	)
 	if err != nil {
 		return uuid, err
 	}
@@ -112,11 +105,9 @@ func (postgres Postgres) Insert(userId uid.UID, fields PostFields) (uid.UID, err
 }
 
 func (postgres Postgres) Update(postId uid.UID, fields PostFields) (uid.UID, error) {
-	query := `UPDATE posts 
-			  SET content = $1 
-			  WHERE uuid = $2`
+	query := "UPDATE posts SET content = $2 WHERE uuid = $1"
 
-	result, err := postgres.Db.Exec(query, fields.Content, postId)
+	result, err := postgres.Db.Exec(query, postId, fields.Content)
 	if err != nil {
 		return uid.Nil, err
 	}
