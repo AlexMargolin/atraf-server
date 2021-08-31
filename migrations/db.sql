@@ -1,6 +1,6 @@
 # Posts
-DROP TABLE IF EXISTS `quotes`.`posts`;
-CREATE TABLE `quotes`.`posts`
+DROP TABLE IF EXISTS `posts`;
+CREATE TABLE `posts`
 (
     `uuid`       varchar(36) NOT NULL,
     `user_uuid`  varchar(36) NOT NULL,
@@ -13,8 +13,8 @@ CREATE TABLE `quotes`.`posts`
 
 
 # Accounts
-DROP TABLE IF EXISTS `quotes`.`accounts`;
-CREATE TABLE `quotes`.`accounts`
+DROP TABLE IF EXISTS `accounts`;
+CREATE TABLE `accounts`
 (
     `uuid`          VARCHAR(36)                           NOT NULL,
     `email`         VARCHAR(255)                          NOT NULL,
@@ -27,8 +27,8 @@ CREATE TABLE `quotes`.`accounts`
 ) ENGINE = InnoDB;
 
 # Comments
-DROP TABLE IF EXISTS `quotes`.`comments`;
-CREATE TABLE `quotes`.`comments`
+DROP TABLE IF EXISTS `comments`;
+CREATE TABLE `comments`
 (
     `uuid`        VARCHAR(36)                           NOT NULL,
     `user_uuid`   VARCHAR(36)                           NOT NULL,

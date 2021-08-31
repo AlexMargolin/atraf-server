@@ -19,7 +19,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Database(MySql) Connection
+	// Database(MySQL) Connection
 	db, err := app.DBConnection()
 	if err != nil {
 		log.Fatal(err)
