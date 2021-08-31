@@ -1,15 +1,20 @@
 # TODO
 
-1. remove config crap and use simple os.env with checker
-2. validate jwt alg
-3. validate type inference
-4. session context - change accountid to userid
-
-# App Configuration
-
-1. marshal into struct
-2. read defaults from an env file
-    1. priority:
-        1. environment
-        2. conf file
-        3. struct default
+1. ~~remove mysql from handlers~~
+2. ~~give NewServices a better name~~
+3. Validate CORS
+4. Validate CSRF
+5. Better error handling
+6. Remove Pkg imports from main. should only contain internals
+7. Storage services are passed as references
+8. System Load test
+9. Generate strong jwt secret
+10. change user_id to account_id
+11. define request tags(?)
+12. comments pagination
+13. security headers
+14. owasp
+15. ~~remove config crap and use simple os.env with checker~~
+16. validate jwt alg
+17. validate type inference
+18. session context - change accountid to userid
