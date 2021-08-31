@@ -23,7 +23,7 @@ type SqlStorage struct {
 func (storage *SqlStorage) Insert(email string, passwordHash []byte) (uid.UID, error) {
 	accountId := uid.New()
 
-	query := "INSERT INTO accounts (id, email, password_hash) VALUES (?, ?, ?)"
+	query := "INSERT INTO accounts (uuid, email, password_hash) VALUES (?, ?, ?)"
 	if _, err := storage.Db.Exec(query, accountId, email, passwordHash); err != nil {
 		return uid.Nil, err
 	}

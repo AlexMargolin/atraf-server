@@ -52,7 +52,7 @@ func (handler *Handler) Register() http.HandlerFunc {
 	}
 }
 
-func (handler *Handler) Login(tokenSecret string) http.HandlerFunc {
+func (handler *Handler) Login() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request LoginRequest
 
@@ -72,7 +72,7 @@ func (handler *Handler) Login(tokenSecret string) http.HandlerFunc {
 			return
 		}
 
-		accessToken, err := token.New(tokenSecret, account.Id)
+		accessToken, err := token.New(account.Id)
 		if err != nil {
 			rest.Error(w, http.StatusInternalServerError) // 500
 			return

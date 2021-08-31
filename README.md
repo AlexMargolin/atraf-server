@@ -1,8 +1,9 @@
 # TODO
 
-1. validate jwt alg
-2. validate type inference
-3. session context - change accountid to userid
+1. remove config crap and use simple os.env with checker
+2. validate jwt alg
+3. validate type inference
+4. session context - change accountid to userid
 
 # App Configuration
 

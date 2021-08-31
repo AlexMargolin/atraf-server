@@ -10,7 +10,7 @@ import (
 )
 
 type SqlComment struct {
-	Id        uid.UID
+	Uuid      uid.UID
 	UserId    uid.UID
 	PostId    uid.UID
 	ParentId  uid.UID
@@ -27,7 +27,7 @@ type SqlStorage struct {
 func (storage *SqlStorage) Many(postId uid.UID) ([]Comment, error) {
 	comments := make([]Comment, 0)
 
-	query := "SELECT * FROM comments WHERE post_id = ? ORDER BY created_at"
+	query := "SELECT * FROM comments WHERE post_uuid = ? ORDER BY created_at"
 	rows, err := storage.Db.Query(query, postId)
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func (storage *SqlStorage) Many(postId uid.UID) ([]Comment, error) {
 	for rows.Next() {
 		var s SqlComment
 
-		err = rows.Scan(&s.Id, &s.UserId, &s.PostId, &s.ParentId, &s.Content, &s.CreatedAt, &s.UpdatedAt, &s.DeletedAt)
+		err = rows.Scan(&s.Uuid, &s.UserId, &s.PostId, &s.ParentId, &s.Content, &s.CreatedAt, &s.UpdatedAt, &s.DeletedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -52,7 +52,7 @@ func (storage *SqlStorage) Many(postId uid.UID) ([]Comment, error) {
 func (storage *SqlStorage) Insert(userId uid.UID, postId uid.UID, parentId uid.UID, fields CommentFields) (uid.UID, error) {
 	commentId := uid.New()
 
-	query := "INSERT INTO comments (id, user_id, post_id, parent_id, content) VALUES (?, ?, ?, ?, ?)"
+	query := "INSERT INTO comments (uuid, user_uuid, post_uuid, parent_uuid, content) VALUES (?, ?, ?, ?, ?)"
 	if _, err := storage.Db.Exec(query, commentId, userId, postId, parentId, fields.Content); err != nil {
 		return uid.Nil, err
 	}
@@ -61,7 +61,7 @@ func (storage *SqlStorage) Insert(userId uid.UID, postId uid.UID, parentId uid.U
 }
 
 func (storage *SqlStorage) Update(commentId uid.UID, fields CommentFields) (uid.UID, error) {
-	query := "UPDATE comments SET content = ? WHERE id = ? LIMIT 1"
+	query := "UPDATE comments SET content = ? WHERE uuid = ? LIMIT 1"
 
 	result, err := storage.Db.Exec(query, fields.Content, commentId)
 	if err != nil {
@@ -82,7 +82,7 @@ func (storage *SqlStorage) Update(commentId uid.UID, fields CommentFields) (uid.
 
 func toComment(sqlComment SqlComment) Comment {
 	return Comment{
-		Id:        sqlComment.Id,
+		Id:        sqlComment.Uuid,
 		UserId:    sqlComment.UserId,
 		PostId:    sqlComment.PostId,
 		ParentId:  sqlComment.ParentId,

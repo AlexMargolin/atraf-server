@@ -2,6 +2,4 @@
 *.bin
 .env
 .env.*
-conf.json
-!conf.example.json
-coverage.*
+!.env.example

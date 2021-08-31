@@ -11,50 +11,46 @@ import (
 	"quotes/pkg/uid"
 )
 
+type sessionContextKey string
+
 const (
-	AuthTokenHeader = "Authorization"
+	AuthTokenHeader                     = "Authorization"
+	SessionContextKey sessionContextKey = "SessionCtx"
 )
 
 type SessionContext struct {
 	AccountId uid.UID
 }
 
-type sessionContextKey string
+func Session(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		unverifiedToken, err := BearerToken(r)
+		if err != nil {
+			rest.Error(w, http.StatusUnauthorized) // 401
+			return
+		}
 
-const SessionContextKey sessionContextKey = "SessionCtx"
+		claims, err := token.Verify(unverifiedToken)
+		if err != nil {
+			rest.Error(w, http.StatusUnauthorized) // 401
+			return
+		}
 
-func Session(secret string) func(next http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			unverifiedToken, err := BearerToken(r)
-			if err != nil {
-				rest.Error(w, http.StatusUnauthorized) // 401
-				return
-			}
+		accountId, err := uid.FromString(claims.Subject)
+		if err != nil {
+			rest.Error(w, http.StatusInternalServerError) // 500
+			return
+		}
 
-			// Verify Token & retrieve claims
-			claims, err := token.Verify(secret, unverifiedToken)
-			if err != nil {
-				rest.Error(w, http.StatusUnauthorized) // 401
-				return
-			}
+		// Session Context
+		sessionContext := &SessionContext{
+			AccountId: accountId,
+		}
 
-			accountId, err := uid.FromString(claims.Subject)
-			if err != nil {
-				rest.Error(w, http.StatusInternalServerError) // 500
-				return
-			}
-
-			// Session Context
-			sessionContext := &SessionContext{
-				AccountId: accountId,
-			}
-
-			// Next & Context
-			ctx := context.WithValue(r.Context(), SessionContextKey, sessionContext)
-			next.ServeHTTP(w, r.WithContext(ctx))
-		})
-	}
+		// Next & Context
+		ctx := context.WithValue(r.Context(), SessionContextKey, sessionContext)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }
 
 // BearerToken retrieves the Auth Token from the Authentication Header

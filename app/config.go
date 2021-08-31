@@ -1,97 +1,58 @@
 package app
 
 import (
-	"encoding/json"
-	"errors"
+	"database/sql"
 	"fmt"
+	"net"
+	"net/http"
 	"os"
-	"reflect"
-	"strconv"
+	"time"
+
+	"github.com/go-sql-driver/mysql"
 )
 
-const (
-	defaultConfFile = "conf.json"
-	defaultEnvTag   = "env"
-)
+// DBConnection returns a new sql.DB instance
+func DBConnection() (*sql.DB, error) {
+	addr := net.JoinHostPort(
+		os.Getenv("MYSQL_HOST"),
+		os.Getenv("MYSQL_PORT"),
+	)
 
-type Decoder struct{}
+	config := &mysql.Config{
+		Addr:                 addr,
+		User:                 os.Getenv("MYSQL_USER"),
+		Passwd:               os.Getenv("MYSQL_PASS"),
+		DBName:               os.Getenv("MYSQL_NAME"),
+		ParseTime:            true,
+		AllowNativePasswords: true,
+	}
 
-// Decode receives struct pointer which represents our config structure.
-// Assignment Order (High Priority -> Low Priority):
-// 1. Environment Variable -> Configuration File -> Struct Defaults
-func (decoder *Decoder) Decode(v interface{}) error {
-	// unmarshal json config
-	decoder.unmarshalJson(v)
-
-	// unmarshal env variables
-	return decoder.unmarshalEnv(v)
-}
-
-// unmarshalJson attempts to unmarshal the json object onto the config struct
-func (decoder *Decoder) unmarshalJson(v interface{}) {
-	file, err := os.Open(defaultConfFile)
+	db, err := sql.Open("mysql", config.FormatDSN())
 	if err != nil {
-		return
+		return nil, err
 	}
 
-	err = json.NewDecoder(file).Decode(v)
-	if err != nil {
-		return
+	// Ping the DB and make sure the server is reachable
+	if err := db.Ping(); err != nil {
+		return nil, err
 	}
+
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(10)
+	db.SetConnMaxLifetime(time.Second * 10)
+
+	return db, nil
 }
 
-func (decoder *Decoder) unmarshalEnv(v interface{}) error {
-	typ := reflect.TypeOf(v)
-	val := reflect.ValueOf(v)
+// ServeHTTP serves an unencrypted HTTP server
+func ServeHTTP(handler http.Handler) error {
+	addr := net.JoinHostPort(
+		os.Getenv("SERVER_HOST"),
+		os.Getenv("SERVER_PORT"),
+	)
 
-	// Validate argument is a struct pointer
-	if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Struct || val.IsNil() {
-		return errors.New("value must be a struct pointer")
-	}
+	// Server Info Message
+	fmt.Printf("Listening on [%s]...", addr)
 
-	for i := 0; i < val.Elem().NumField(); i++ {
-		rt := typ.Elem().Field(i) // Field Reflect Type
-		rv := val.Elem().Field(i) // Field Reflect Value
-
-		tag := rt.Tag.Get(defaultEnvTag) // Field Reflect Tag
-		if value := os.Getenv(tag); value != "" {
-			if err := decoder.covert(value, &rv); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
-// Convert attempts to convert a given string value(v)
-// to the reflected struct field type(*rv)
-func (Decoder) covert(s string, rv *reflect.Value) error {
-	switch rv.Type().Kind() {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		value, err := strconv.ParseInt(s, 10, 64)
-		if err != nil || rv.OverflowInt(value) {
-			return err
-		}
-		rv.SetInt(value)
-
-	case reflect.Bool:
-		value, err := strconv.ParseBool(s)
-		if err != nil {
-			return err
-		}
-		rv.SetBool(value)
-
-	case reflect.String:
-		rv.SetString(s)
-
-	default:
-		return errors.New(fmt.Sprintf("unsupported config type [%s]", rv.Type().Kind()))
-	}
-
-	return nil
-}
-
-func NewConfig() *Decoder {
-	return &Decoder{}
+	return http.ListenAndServe(addr, handler)
 }

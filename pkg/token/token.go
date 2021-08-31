@@ -1,7 +1,7 @@
 package token
 
 import (
-	"errors"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -9,13 +9,11 @@ import (
 	"quotes/pkg/uid"
 )
 
+var AccessTokenSecret = os.Getenv("ACCESS_TOKEN_SECRET")
+
 type Claims = jwt.StandardClaims
 
-func New(secret string, subject uid.UID) (string, error) {
-	if secret == "" {
-		return "", errors.New("empty token secret provided")
-	}
-
+func New(subject uid.UID) (string, error) {
 	// Unsigned Token
 	unsignedToken := jwt.NewWithClaims(jwt.SigningMethodHS512, Claims{
 		Subject:   uid.ToString(subject),
@@ -24,15 +22,11 @@ func New(secret string, subject uid.UID) (string, error) {
 	})
 
 	// Signed Token
-	return unsignedToken.SignedString([]byte(secret))
+	return unsignedToken.SignedString([]byte(AccessTokenSecret))
 }
 
-func Verify(secret string, unverifiedToken string) (Claims, error) {
-	if secret == "" {
-		return Claims{}, errors.New("empty token secret provided")
-	}
-
-	token, err := jwt.ParseWithClaims(unverifiedToken, &Claims{}, signingSecret(secret))
+func Verify(unverifiedToken string) (Claims, error) {
+	token, err := jwt.ParseWithClaims(unverifiedToken, &Claims{}, signingSecret(AccessTokenSecret))
 
 	// Validate token
 	claims, ok := token.Claims.(*Claims)

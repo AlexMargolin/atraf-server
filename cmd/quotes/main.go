@@ -13,32 +13,14 @@ import (
 	"quotes/pkg/validator"
 )
 
-type Config struct {
-	DbHost      string `env:"DB_HOST"`      // Database host name
-	DbPort      string `env:"DB_PORT" `     // Database port
-	DbUser      string `env:"DB_USER"`      // Database username
-	DbPass      string `env:"DB_PASS"`      // Database user password
-	DbName      string `env:"DB_NAME"`      // Database DB Name
-	ServerPort  string `env:"SERVER_PORT"`  // Server Port
-	ServerHost  string `env:"SERVER_HOST"`  // Server Port
-	TokenSecret string `env:"TOKEN_SECRET"` // Authentication Token Signing Secret
-}
-
 func main() {
-	// App Config
-	var config Config
-	if err := app.NewConfig().Decode(&config); err != nil {
+	// Check environment
+	if err := app.CheckEnvironment(); err != nil {
 		log.Fatal(err)
 	}
 
-	// Database
-	sql, err := app.SqlConnection(&app.SqlConfig{
-		Host: config.DbHost,
-		Port: config.DbPort,
-		User: config.DbUser,
-		Pass: config.DbPass,
-		Name: config.DbName,
-	})
+	// Database(MySql) Connection
+	db, err := app.DBConnection()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -47,17 +29,17 @@ func main() {
 	validate := validator.NewValidator()
 
 	// Account
-	accountStorage := account.NewStorage(sql)
+	accountStorage := account.NewStorage(db)
 	accountService := account.NewService(accountStorage)
 	accountHandler := account.NewHandler(accountService, validate)
 
 	// Posts
-	postsStorage := posts.NewStorage(sql)
+	postsStorage := posts.NewStorage(db)
 	postsService := posts.NewService(postsStorage)
 	postsHandler := posts.NewHandler(postsService, validate)
 
 	// Comments
-	commentsStorage := comments.NewStorage(sql)
+	commentsStorage := comments.NewStorage(db)
 	commentsService := comments.NewService(commentsStorage)
 	commentsHandler := comments.NewHandler(commentsService, validate)
 
@@ -70,14 +52,14 @@ func main() {
 		// Account
 		router.Route("/account", func(router chi.Router) {
 			router.Post("/register", accountHandler.Register())
-			router.Post("/login", accountHandler.Login(config.TokenSecret))
+			router.Post("/login", accountHandler.Login())
 		})
 	})
 
 	// Authenticated Routes (Private)
 	// Routes defined under this group have access to the Session Context
 	router.Group(func(router chi.Router) {
-		router.Use(middleware.Session(config.TokenSecret))
+		router.Use(middleware.Session)
 
 		// Posts
 		router.Route("/posts", func(router chi.Router) {
@@ -95,13 +77,8 @@ func main() {
 		})
 	})
 
-	// Server
-	err = app.Run(&app.ServerConfig{
-		Host:    config.ServerHost,
-		Port:    config.ServerPort,
-		Handler: router,
-	})
-	if err != nil {
+	// HTTP Server & Handler
+	if err = app.ServeHTTP(router); err != nil {
 		log.Fatal(err)
 	}
 }
