@@ -18,3 +18,10 @@
 16. validate jwt alg
 17. validate type inference
 18. session context - change accountid to userid
+19. better comments
+
+# Features
+
+1. [Posts] Attachments
+2. [Auth] Refresh Token
+3. [Reactions]

@@ -78,7 +78,5 @@ func main() {
 	})
 
 	// HTTP Server & Handler
-	if err = app.ServeHTTP(router); err != nil {
-		log.Fatal(err)
-	}
+	log.Fatal(app.ServeHTTP(router))
 }
