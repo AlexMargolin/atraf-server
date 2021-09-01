@@ -9,11 +9,11 @@ import (
 )
 
 type Account struct {
-	Id           uid.UID
-	Email        string
-	PasswordHash []byte
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	Id           uid.UID   `json:"id"`
+	Email        string    `json:"email"`
+	PasswordHash []byte    `json:"-"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 type Storage interface {
@@ -49,8 +49,7 @@ func (service *Service) Login(email string, password string) (Account, error) {
 		return account, err
 	}
 
-	err = service.comparePasswordHash(password, account.PasswordHash)
-	if err != nil {
+	if err = service.comparePasswordHash(password, account.PasswordHash); err != nil {
 		return account, err
 	}
 
