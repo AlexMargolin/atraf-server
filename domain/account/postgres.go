@@ -25,7 +25,12 @@ type Postgres struct {
 func (postgres *Postgres) Insert(email string, passwordHash []byte) (uid.UID, error) {
 	var uuid uid.UID
 
-	query := "INSERT INTO accounts (email, password_hash) VALUES ($1, $2) RETURNING uuid"
+	query := `
+	INSERT INTO accounts (email, password_hash) 
+	VALUES ($1, $2) 
+	RETURNING uuid
+	`
+
 	if err := postgres.Db.Get(&uuid, query, email, passwordHash); err != nil {
 		return uuid, err
 	}
@@ -36,7 +41,18 @@ func (postgres *Postgres) Insert(email string, passwordHash []byte) (uid.UID, er
 func (postgres *Postgres) ByEmail(email string) (Account, error) {
 	var account PostgresAccount
 
-	query := "SELECT uuid, email, password_hash, created_at, updated_at, deleted_at FROM accounts WHERE email = $1 LIMIT 1"
+	query := `
+	SELECT uuid, 
+	       email, 
+	       password_hash, 
+	       created_at, 
+	       updated_at, 
+	       deleted_at 
+	FROM accounts 
+	WHERE email = $1 
+	LIMIT 1
+	`
+
 	if err := postgres.Db.Get(&account, query, email); err != nil {
 		return Account{}, err
 	}
