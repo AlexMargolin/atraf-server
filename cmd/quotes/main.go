@@ -19,7 +19,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Database(MySQL) Connection
+	// Database(Postgres) Connection
 	db, err := app.DBConnection()
 	if err != nil {
 		log.Fatal(err)

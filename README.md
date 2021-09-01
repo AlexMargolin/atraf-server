@@ -21,6 +21,7 @@
 19. better comments
 20. test user inputs
 21. refactor pagination = replace offset with cursor
+22. server logger
 
 # Features
 
