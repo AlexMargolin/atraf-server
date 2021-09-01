@@ -41,7 +41,6 @@ func (postgres *Postgres) Many(postId uid.UID) ([]Comment, error) {
 	WHERE post_uuid = $1 
 	ORDER BY created_at
 	`
-
 	if err := postgres.Db.Select(&comments, query, postId); err != nil {
 		return nil, err
 	}
@@ -57,7 +56,6 @@ func (postgres *Postgres) Insert(userId uid.UID, postId uid.UID, parentId uid.UI
 	VALUES ($1, $2, $3, $4) 
 	RETURNING uuid
 	`
-
 	if err := postgres.Db.Get(&uuid, query, userId, postId, parentId, fields.Content); err != nil {
 		return uuid, err
 	}
@@ -74,7 +72,6 @@ func (postgres *Postgres) Update(commentId uid.UID, fields CommentFields) (uid.U
 	WHERE uuid = $1 
 	RETURNING uuid
 	`
-
 	if err := postgres.Db.Get(&uuid, query, commentId, fields.Content); err != nil {
 		return uuid, err
 	}

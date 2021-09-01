@@ -30,7 +30,6 @@ func (postgres *Postgres) Insert(email string, passwordHash []byte) (uid.UID, er
 	VALUES ($1, $2) 
 	RETURNING uuid
 	`
-
 	if err := postgres.Db.Get(&uuid, query, email, passwordHash); err != nil {
 		return uuid, err
 	}
@@ -52,7 +51,6 @@ func (postgres *Postgres) ByEmail(email string) (Account, error) {
 	WHERE email = $1 
 	LIMIT 1
 	`
-
 	if err := postgres.Db.Get(&account, query, email); err != nil {
 		return Account{}, err
 	}

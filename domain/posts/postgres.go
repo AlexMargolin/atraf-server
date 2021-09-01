@@ -36,7 +36,6 @@ func (postgres Postgres) One(postId uid.UID) (Post, error) {
 	WHERE uuid = $1 
 	LIMIT 1
 	`
-
 	if err := postgres.Db.Get(&post, query, postId); err != nil {
 		return Post{}, err
 	}
@@ -59,7 +58,6 @@ func (postgres Postgres) Many(limit int, cursor uid.UID) ([]Post, error) {
 	ORDER BY created_at 
 	DESC LIMIT $2
 	`
-
 	if err := postgres.Db.Select(&posts, query, cursor, limit); err != nil {
 		return nil, err
 	}
@@ -75,7 +73,6 @@ func (postgres Postgres) Insert(userId uid.UID, fields PostFields) (uid.UID, err
 	VALUES ($1, $2) 
 	RETURNING uuid
 	`
-
 	if err := postgres.Db.Get(&uuid, query, userId, fields.Content); err != nil {
 		return uuid, err
 	}
@@ -92,7 +89,6 @@ func (postgres Postgres) Update(postId uid.UID, fields PostFields) (uid.UID, err
 	WHERE uuid = $1 
 	RETURNING uuid
 	`
-
 	if err := postgres.Db.Get(&uuid, query, postId, fields.Content); err != nil {
 		return uuid, err
 	}
