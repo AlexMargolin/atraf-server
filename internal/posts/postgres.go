@@ -54,21 +54,21 @@ func (postgres Postgres) Many(limit int, cursor uid.UID) ([]Post, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var s PostgresPost
+		var pp PostgresPost
 
 		err = rows.Scan(
-			&s.Uuid,
-			&s.UserUuid,
-			&s.Content,
-			&s.CreatedAt,
-			&s.UpdatedAt,
-			&s.DeletedAt,
+			&pp.Uuid,
+			&pp.UserUuid,
+			&pp.Content,
+			&pp.CreatedAt,
+			&pp.UpdatedAt,
+			&pp.DeletedAt,
 		)
 		if err != nil {
 			return nil, err
 		}
 
-		posts = append(posts, postgres.toPost(s))
+		posts = append(posts, postgres.toPost(pp))
 	}
 
 	return posts, nil

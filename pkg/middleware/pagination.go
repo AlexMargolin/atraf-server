@@ -31,12 +31,10 @@ const PaginationContextKey paginationContextKey = "PaginationCtx"
 // Pagination middleware attempts to parse pagination query params and passes them in the request context.
 func Pagination(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Default Pagination data
 		pagination := PaginationContext{
 			Limit: DefaultLimit,
 		}
 
-		// Parse Pagination Params from the request
 		limit := r.URL.Query().Get(LimitParam)
 		cursor := r.URL.Query().Get(CursorParam)
 
