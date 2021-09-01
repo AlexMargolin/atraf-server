@@ -44,10 +44,8 @@ func main() {
 	// Routes defined under this group do not have access to the Session Context
 	router.Group(func(router chi.Router) {
 		// Account
-		router.Route("/account", func(router chi.Router) {
-			router.Post("/register", accountHandler.Register())
-			router.Post("/login", accountHandler.Login())
-		})
+		router.Post("/account/register", accountHandler.Register())
+		router.Post("/account/login", accountHandler.Login())
 	})
 
 	// Authenticated Routes (Private)
@@ -55,18 +53,16 @@ func main() {
 	router.Group(func(router chi.Router) {
 		router.Use(middleware.Session)
 
-		router.Route("/posts", func(router chi.Router) {
-			router.Post("/", postsHandler.Create())
-			router.Put("/{post_id}", postsHandler.Update())
-			router.Get("/{post_id}", postsHandler.ReadOne())
-			router.With(middleware.Pagination).Get("/", postsHandler.ReadMany())
-		})
+		// Posts
+		router.Post("/posts", postsHandler.Create())
+		router.Put("/posts/{post_id}", postsHandler.Update())
+		router.Get("/posts/{post_id}", postsHandler.ReadOne())
+		router.With(middleware.Pagination).Get("/posts", postsHandler.ReadMany())
 
-		router.Route("/comments", func(router chi.Router) {
-			router.Post("/", commentsHandler.Create())
-			router.Get("/{post_id}", commentsHandler.ReadMany())
-			router.Put("/{comment_id}", commentsHandler.Update())
-		})
+		// Comments
+		router.Post("/comments", commentsHandler.Create())
+		router.Get("/comments/{post_id}", commentsHandler.ReadMany())
+		router.Put("/comments/{comment_id}", commentsHandler.Update())
 	})
 
 	log.Fatal(app.ServeHTTP(router))
