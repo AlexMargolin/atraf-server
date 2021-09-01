@@ -53,7 +53,7 @@ func (postgres *Postgres) Many(postId uid.UID) ([]Comment, error) {
 			return nil, err
 		}
 
-		comments = append(comments, toComment(pc))
+		comments = append(comments, prepare(pc))
 	}
 
 	return comments, nil
@@ -89,7 +89,7 @@ func (postgres *Postgres) Update(commentId uid.UID, fields CommentFields) (uid.U
 	return commentId, nil
 }
 
-func toComment(pc PostgresComment) Comment {
+func prepare(pc PostgresComment) Comment {
 	return Comment{
 		Id:        pc.Uuid,
 		UserId:    pc.UserUuid,

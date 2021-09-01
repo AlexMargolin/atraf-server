@@ -5,10 +5,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"quotes/domain/account"
+	"quotes/domain/comments"
+	"quotes/domain/posts"
+
 	"quotes/app"
-	"quotes/internal/account"
-	"quotes/internal/comments"
-	"quotes/internal/posts"
 	"quotes/pkg/middleware"
 	"quotes/pkg/validator"
 )

@@ -52,10 +52,10 @@ func (postgres *Postgres) ByEmail(email string) (Account, error) {
 		return Account{}, err
 	}
 
-	return postgres.toAccount(pa), nil
+	return prepare(pa), nil
 }
 
-func (Postgres) toAccount(pa PostgresAccount) Account {
+func prepare(pa PostgresAccount) Account {
 	return Account{
 		Id:           pa.Uuid,
 		Email:        pa.Email,

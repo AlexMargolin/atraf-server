@@ -39,7 +39,7 @@ func (postgres Postgres) One(postId uid.UID) (Post, error) {
 		return Post{}, err
 	}
 
-	return postgres.toPost(pp), nil
+	return prepare(pp), nil
 }
 
 func (postgres Postgres) Many(limit int, cursor uid.UID) ([]Post, error) {
@@ -68,7 +68,7 @@ func (postgres Postgres) Many(limit int, cursor uid.UID) ([]Post, error) {
 			return nil, err
 		}
 
-		posts = append(posts, postgres.toPost(pp))
+		posts = append(posts, prepare(pp))
 	}
 
 	return posts, nil
@@ -105,7 +105,7 @@ func (postgres Postgres) Update(postId uid.UID, fields PostFields) (uid.UID, err
 }
 
 // Receives a PostgresPost and returns a Post
-func (Postgres) toPost(pp PostgresPost) Post {
+func prepare(pp PostgresPost) Post {
 	return Post{
 		Id:        pp.Uuid,
 		UserId:    pp.UserUuid,
