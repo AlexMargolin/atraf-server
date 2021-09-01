@@ -2,72 +2,44 @@ package comments
 
 import (
 	"database/sql"
-	"errors"
-	"fmt"
 	"time"
+
+	"github.com/jmoiron/sqlx"
 
 	"quotes/pkg/uid"
 )
 
 type PostgresComment struct {
-	Uuid       uid.UID
-	UserUuid   uid.UID
-	PostUuid   uid.UID
-	ParentUuid uid.UID
-	Content    string
-	CreatedAt  time.Time
-	UpdatedAt  sql.NullTime
-	DeletedAt  sql.NullTime
+	Uuid       uid.UID      `db:"uuid"`
+	UserUuid   uid.UID      `db:"user_uuid"`
+	PostUuid   uid.UID      `db:"post_uuid"`
+	ParentUuid uid.UID      `db:"parent_uuid"`
+	Content    string       `db:"content"`
+	CreatedAt  time.Time    `db:"created_at"`
+	UpdatedAt  sql.NullTime `db:"updated_at"`
+	DeletedAt  sql.NullTime `db:"deleted_at"`
 }
 
 type Postgres struct {
-	Db *sql.DB
+	Db *sqlx.DB
 }
 
 func (postgres *Postgres) Many(postId uid.UID) ([]Comment, error) {
-	comments := make([]Comment, 0)
+	var comments []PostgresComment
 
 	query := "SELECT uuid, user_uuid, post_uuid, parent_uuid, content, created_at, updated_at, deleted_at FROM comments WHERE post_uuid = $1 ORDER BY created_at"
-
-	rows, err := postgres.Db.Query(query, postId)
-	if err != nil {
+	if err := postgres.Db.Select(&comments, query, postId); err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	// Scan Rows
-	for rows.Next() {
-		var pc PostgresComment
-
-		err = rows.Scan(
-			&pc.Uuid,
-			&pc.UserUuid,
-			&pc.PostUuid,
-			&pc.ParentUuid,
-			&pc.Content,
-			&pc.CreatedAt,
-			&pc.UpdatedAt,
-			&pc.DeletedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		comments = append(comments, prepare(pc))
-	}
-
-	return comments, nil
+	return prepareMany(comments), nil
 }
 
 func (postgres *Postgres) Insert(userId uid.UID, postId uid.UID, parentId uid.UID, fields CommentFields) (uid.UID, error) {
 	var uuid uid.UID
 
 	query := "INSERT INTO comments (user_uuid, post_uuid, parent_uuid, content) VALUES ($1, $2, $3, $4) RETURNING uuid"
-
-	err := postgres.Db.QueryRow(query, userId, postId, parentId, fields.Content).Scan(
-		&uuid,
-	)
-	if err != nil {
+	if err := postgres.Db.Get(&uuid, query, userId, postId, parentId, fields.Content); err != nil {
 		return uuid, err
 	}
 
@@ -75,21 +47,17 @@ func (postgres *Postgres) Insert(userId uid.UID, postId uid.UID, parentId uid.UI
 }
 
 func (postgres *Postgres) Update(commentId uid.UID, fields CommentFields) (uid.UID, error) {
-	query := `UPDATE comments SET content = $2 WHERE uuid = $1`
+	var uuid uid.UID
 
-	result, err := postgres.Db.Exec(query, commentId, fields.Content)
-	if err != nil {
-		return uid.Nil, err
+	query := `UPDATE comments SET content = $2 WHERE uuid = $1 RETURNING uuid`
+	if err := postgres.Db.Get(&uuid, query, commentId, fields.Content); err != nil {
+		return uuid, err
 	}
 
-	if rows, err := result.RowsAffected(); err != nil || rows == 0 {
-		return uid.Nil, errors.New(fmt.Sprintf("0 rows affected when updating Post[%s]", commentId))
-	}
-
-	return commentId, nil
+	return uuid, nil
 }
 
-func prepare(pc PostgresComment) Comment {
+func prepareOne(pc PostgresComment) Comment {
 	return Comment{
 		Id:        pc.Uuid,
 		UserId:    pc.UserUuid,
@@ -101,6 +69,16 @@ func prepare(pc PostgresComment) Comment {
 	}
 }
 
-func NewStorage(db *sql.DB) *Postgres {
+func prepareMany(pc []PostgresComment) []Comment {
+	var comments = make([]Comment, 0)
+
+	for _, comment := range pc {
+		comments = append(comments, prepareOne(comment))
+	}
+
+	return comments
+}
+
+func NewStorage(db *sqlx.DB) *Postgres {
 	return &Postgres{db}
 }

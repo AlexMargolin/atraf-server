@@ -4,31 +4,29 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/jmoiron/sqlx"
+
 	"quotes/pkg/uid"
 )
 
 type PostgresAccount struct {
-	Uuid         uid.UID
-	Email        string
-	PasswordHash []byte
-	CreatedAt    time.Time
-	UpdatedAt    sql.NullTime
-	DeletedAt    sql.NullTime
+	Uuid         uid.UID      `db:"uuid"`
+	Email        string       `db:"email"`
+	PasswordHash []byte       `db:"password_hash"`
+	CreatedAt    time.Time    `db:"created_at"`
+	UpdatedAt    sql.NullTime `db:"updated_at"`
+	DeletedAt    sql.NullTime `db:"deleted_at"`
 }
 
 type Postgres struct {
-	Db *sql.DB
+	Db *sqlx.DB
 }
 
 func (postgres *Postgres) Insert(email string, passwordHash []byte) (uid.UID, error) {
 	var uuid uid.UID
 
 	query := "INSERT INTO accounts (email, password_hash) VALUES ($1, $2) RETURNING uuid"
-
-	err := postgres.Db.QueryRow(query, email, passwordHash).Scan(
-		&uuid,
-	)
-	if err != nil {
+	if err := postgres.Db.Get(&uuid, query, email, passwordHash); err != nil {
 		return uuid, err
 	}
 
@@ -36,26 +34,17 @@ func (postgres *Postgres) Insert(email string, passwordHash []byte) (uid.UID, er
 }
 
 func (postgres *Postgres) ByEmail(email string) (Account, error) {
-	var pa PostgresAccount
+	var account PostgresAccount
 
 	query := "SELECT uuid, email, password_hash, created_at, updated_at, deleted_at FROM accounts WHERE email = $1 LIMIT 1"
-
-	err := postgres.Db.QueryRow(query, email).Scan(
-		&pa.Uuid,
-		&pa.Email,
-		&pa.PasswordHash,
-		&pa.CreatedAt,
-		&pa.UpdatedAt,
-		&pa.DeletedAt,
-	)
-	if err != nil {
+	if err := postgres.Db.Get(&account, query, email); err != nil {
 		return Account{}, err
 	}
 
-	return prepare(pa), nil
+	return prepareOne(account), nil
 }
 
-func prepare(pa PostgresAccount) Account {
+func prepareOne(pa PostgresAccount) Account {
 	return Account{
 		Id:           pa.Uuid,
 		Email:        pa.Email,
@@ -65,6 +54,6 @@ func prepare(pa PostgresAccount) Account {
 	}
 }
 
-func NewStorage(db *sql.DB) *Postgres {
+func NewStorage(db *sqlx.DB) *Postgres {
 	return &Postgres{db}
 }

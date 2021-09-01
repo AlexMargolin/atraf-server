@@ -2,87 +2,53 @@ package posts
 
 import (
 	"database/sql"
-	"errors"
-	"fmt"
 	"time"
+
+	"github.com/jmoiron/sqlx"
 
 	"quotes/pkg/uid"
 )
 
 type PostgresPost struct {
-	Uuid      uid.UID
-	UserUuid  uid.UID
-	Content   string
-	CreatedAt time.Time
-	UpdatedAt sql.NullTime
-	DeletedAt sql.NullTime
+	Uuid      uid.UID      `db:"uuid"`
+	UserUuid  uid.UID      `db:"user_uuid"`
+	Content   string       `db:"content"`
+	CreatedAt time.Time    `db:"created_at"`
+	UpdatedAt sql.NullTime `db:"updated_at"`
+	DeletedAt sql.NullTime `db:"deleted_at"`
 }
 
 type Postgres struct {
-	Db *sql.DB
+	Db *sqlx.DB
 }
 
 func (postgres Postgres) One(postId uid.UID) (Post, error) {
-	var pp PostgresPost
+	var post PostgresPost
 
 	query := "SELECT uuid, user_uuid, content, created_at, updated_at, deleted_at FROM posts WHERE uuid = $1 LIMIT 1"
-
-	err := postgres.Db.QueryRow(query, postId).Scan(
-		&pp.Uuid,
-		&pp.UserUuid,
-		&pp.Content,
-		&pp.CreatedAt,
-		&pp.UpdatedAt,
-		&pp.DeletedAt,
-	)
-	if err != nil {
+	if err := postgres.Db.Get(&post, query, postId); err != nil {
 		return Post{}, err
 	}
 
-	return prepare(pp), nil
+	return prepareOne(post), nil
 }
 
 func (postgres Postgres) Many(limit int, cursor uid.UID) ([]Post, error) {
-	posts := make([]Post, 0)
+	var posts []PostgresPost
 
 	query := "SELECT uuid, user_uuid, content, created_at, updated_at, deleted_at FROM posts WHERE uuid > $1 ORDER BY created_at DESC LIMIT $2"
-
-	rows, err := postgres.Db.Query(query, cursor, limit)
-	if err != nil {
+	if err := postgres.Db.Select(&posts, query, cursor, limit); err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		var pp PostgresPost
-
-		err = rows.Scan(
-			&pp.Uuid,
-			&pp.UserUuid,
-			&pp.Content,
-			&pp.CreatedAt,
-			&pp.UpdatedAt,
-			&pp.DeletedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		posts = append(posts, prepare(pp))
-	}
-
-	return posts, nil
+	return prepareMany(posts), nil
 }
 
 func (postgres Postgres) Insert(userId uid.UID, fields PostFields) (uid.UID, error) {
 	var uuid uid.UID
 
 	query := "INSERT INTO posts (user_uuid, content) VALUES ($1, $2) RETURNING uuid"
-
-	err := postgres.Db.QueryRow(query, userId, fields.Content).Scan(
-		&uuid,
-	)
-	if err != nil {
+	if err := postgres.Db.Get(&uuid, query, userId, fields.Content); err != nil {
 		return uuid, err
 	}
 
@@ -90,21 +56,17 @@ func (postgres Postgres) Insert(userId uid.UID, fields PostFields) (uid.UID, err
 }
 
 func (postgres Postgres) Update(postId uid.UID, fields PostFields) (uid.UID, error) {
-	query := "UPDATE posts SET content = $2 WHERE uuid = $1"
+	var uuid uid.UID
 
-	result, err := postgres.Db.Exec(query, postId, fields.Content)
-	if err != nil {
-		return uid.Nil, err
+	query := "UPDATE posts SET content = $2 WHERE uuid = $1 RETURNING uuid"
+	if err := postgres.Db.Get(&uuid, query, postId, fields.Content); err != nil {
+		return uuid, err
 	}
 
-	if rows, err := result.RowsAffected(); err != nil || rows == 0 {
-		return uid.Nil, errors.New(fmt.Sprintf("0 rows affected when updating Post[%s]", postId))
-	}
-
-	return postId, nil
+	return uuid, nil
 }
 
-func prepare(pp PostgresPost) Post {
+func prepareOne(pp PostgresPost) Post {
 	return Post{
 		Id:        pp.Uuid,
 		UserId:    pp.UserUuid,
@@ -114,6 +76,16 @@ func prepare(pp PostgresPost) Post {
 	}
 }
 
-func NewStorage(db *sql.DB) *Postgres {
+func prepareMany(pp []PostgresPost) []Post {
+	var posts = make([]Post, 0)
+
+	for _, post := range pp {
+		posts = append(posts, prepareOne(post))
+	}
+
+	return posts
+}
+
+func NewStorage(db *sqlx.DB) *Postgres {
 	return &Postgres{db}
 }
