@@ -15,36 +15,29 @@ import (
 )
 
 func main() {
-	// Check environment
 	if err := app.CheckEnvironment(); err != nil {
 		log.Fatal(err)
 	}
 
-	// Database(Postgres) Connection
 	db, err := app.DBConnection()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Struct validator instance
 	validate := validator.NewValidator()
 
-	// Account
 	accountStorage := account.NewStorage(db)
 	accountService := account.NewService(accountStorage)
 	accountHandler := account.NewHandler(accountService, validate)
 
-	// Posts
 	postsStorage := posts.NewStorage(db)
 	postsService := posts.NewService(postsStorage)
 	postsHandler := posts.NewHandler(postsService, validate)
 
-	// Comments
 	commentsStorage := comments.NewStorage(db)
 	commentsService := comments.NewService(commentsStorage)
 	commentsHandler := comments.NewHandler(commentsService, validate)
 
-	// HTTP Router
 	router := chi.NewRouter()
 
 	// Unauthenticated Routes (Public)
@@ -62,7 +55,6 @@ func main() {
 	router.Group(func(router chi.Router) {
 		router.Use(middleware.Session)
 
-		// Posts
 		router.Route("/posts", func(router chi.Router) {
 			router.Post("/", postsHandler.Create())
 			router.Put("/{post_id}", postsHandler.Update())
@@ -70,7 +62,6 @@ func main() {
 			router.With(middleware.Pagination).Get("/", postsHandler.ReadMany())
 		})
 
-		// Comments
 		router.Route("/comments", func(router chi.Router) {
 			router.Post("/", commentsHandler.Create())
 			router.Get("/{post_id}", commentsHandler.ReadMany())
@@ -78,6 +69,5 @@ func main() {
 		})
 	})
 
-	// HTTP Server & Handler
 	log.Fatal(app.ServeHTTP(router))
 }

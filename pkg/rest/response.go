@@ -10,9 +10,6 @@ type ResponseData struct {
 	Data interface{} `json:"data"`
 }
 
-// Success is a generic and unified way to return a response to the client.
-// Should be used when the response is considered "successful".
-// use Error when an error response is needed.
 func Success(w http.ResponseWriter, code int, data ...interface{}) {
 	response := ResponseData{data}
 

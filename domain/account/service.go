@@ -41,9 +41,6 @@ func (service *Service) Register(email string, password string) (uid.UID, error)
 	return accountId, nil
 }
 
-// Login attempts to fetch an existing account by the email address.
-// if found, the password argument is then compared to the Accounts stored hash value.
-// returns an Account on successful verification.
 func (service *Service) Login(email string, password string) (Account, error) {
 	var account Account
 
@@ -60,13 +57,10 @@ func (service *Service) Login(email string, password string) (Account, error) {
 	return account, nil
 }
 
-// newPasswordHash receives a plain text password and returns a bcrypt password hash.
 func (Service) newPasswordHash(password string) ([]byte, error) {
 	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 }
 
-// comparePasswordHash receives a plain text password, and a bcrypt password hash.
-// Returns nil on successful compare, error otherwise
 func (Service) comparePasswordHash(password string, passwordHash []byte) error {
 	return bcrypt.CompareHashAndPassword(passwordHash, []byte(password))
 }

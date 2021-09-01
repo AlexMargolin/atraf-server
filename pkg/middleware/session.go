@@ -54,7 +54,6 @@ func Session(next http.Handler) http.Handler {
 	})
 }
 
-// BearerToken retrieves the Auth Token from the Authentication Header
 func BearerToken(r *http.Request) (string, error) {
 	header := r.Header.Get(AuthTokenHeader)
 	if header == "" {
@@ -69,7 +68,6 @@ func BearerToken(r *http.Request) (string, error) {
 	return splitHeader[1], nil
 }
 
-// GetSessionContext returns session request context
 func GetSessionContext(request *http.Request) *SessionContext {
 	return request.Context().Value(SessionContextKey).(*SessionContext)
 }

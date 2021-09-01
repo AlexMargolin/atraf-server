@@ -104,7 +104,6 @@ func (postgres Postgres) Update(postId uid.UID, fields PostFields) (uid.UID, err
 	return postId, nil
 }
 
-// Receives a PostgresPost and returns a Post
 func prepare(pp PostgresPost) Post {
 	return Post{
 		Id:        pp.Uuid,
@@ -115,7 +114,6 @@ func prepare(pp PostgresPost) Post {
 	}
 }
 
-// NewStorage returns a new MySQL Storage instance
 func NewStorage(db *sql.DB) *Postgres {
 	return &Postgres{db}
 }

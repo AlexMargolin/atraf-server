@@ -18,7 +18,6 @@ var RequiredKeys = []string{
 	"ACCESS_TOKEN_SECRET",
 }
 
-// CheckEnvironment check whether required environment variables are defined.
 func CheckEnvironment() error {
 	missing := make([]string, 0)
 

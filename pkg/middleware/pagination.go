@@ -28,7 +28,6 @@ type paginationContextKey string
 
 const PaginationContextKey paginationContextKey = "PaginationCtx"
 
-// Pagination middleware attempts to parse pagination query params and passes them in the request context.
 func Pagination(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		pagination := PaginationContext{
@@ -61,7 +60,6 @@ func Pagination(next http.Handler) http.Handler {
 	})
 }
 
-// GetPaginationContext returns a pagination request context
 func GetPaginationContext(request *http.Request) *PaginationContext {
 	return request.Context().Value(PaginationContextKey).(*PaginationContext)
 }

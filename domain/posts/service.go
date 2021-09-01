@@ -31,27 +31,22 @@ type Service struct {
 	storage Storage
 }
 
-// Post retrieves a single Post from the storage
 func (service *Service) Post(postId uid.UID) (Post, error) {
 	return service.storage.One(postId)
 }
 
-// Posts returns a paginated list of posts
 func (service *Service) Posts(limit int, cursor uid.UID) ([]Post, error) {
 	return service.storage.Many(limit, cursor)
 }
 
-// New inserts a new Post to the storage
 func (service *Service) New(userId uid.UID, fields PostFields) (uid.UID, error) {
 	return service.storage.Insert(userId, fields)
 }
 
-// Update updates an existing post in the storage
 func (service *Service) Update(postId uid.UID, fields PostFields) (uid.UID, error) {
 	return service.storage.Update(postId, fields)
 }
 
-// NewService returns a new Posts service instance
 func NewService(storage Storage) *Service {
 	return &Service{storage}
 }

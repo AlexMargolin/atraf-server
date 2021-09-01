@@ -11,7 +11,6 @@ import (
 	_ "github.com/lib/pq"
 )
 
-// DBConnection returns a new sql.DB instance
 func DBConnection() (*sql.DB, error) {
 	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		os.Getenv("DB_HOST"),
@@ -44,7 +43,6 @@ func ServeHTTP(handler http.Handler) error {
 		os.Getenv("SERVER_PORT"),
 	)
 
-	// Server Info Message
 	fmt.Printf("Listening on [%s]...", addr)
 
 	return http.ListenAndServe(addr, handler)
