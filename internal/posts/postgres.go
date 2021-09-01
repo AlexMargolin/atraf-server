@@ -22,21 +22,6 @@ type Postgres struct {
 	Db *sql.DB
 }
 
-func (postgres Postgres) Count() (int, error) {
-	var count int
-
-	query := `SELECT COUNT(uuid) FROM posts`
-
-	err := postgres.Db.QueryRow(query).Scan(
-		&count,
-	)
-	if err != nil {
-		return count, err
-	}
-
-	return count, nil
-}
-
 func (postgres Postgres) One(postId uid.UID) (Post, error) {
 	var pp PostgresPost
 
@@ -57,12 +42,12 @@ func (postgres Postgres) One(postId uid.UID) (Post, error) {
 	return postgres.toPost(pp), nil
 }
 
-func (postgres Postgres) Many(offset int, limit int) ([]Post, error) {
+func (postgres Postgres) Many(limit int, cursor uid.UID) ([]Post, error) {
 	posts := make([]Post, 0)
 
-	query := "SELECT uuid, user_uuid, content, created_at, updated_at, deleted_at FROM posts ORDER BY created_at DESC OFFSET $1 LIMIT $2"
+	query := "SELECT uuid, user_uuid, content, created_at, updated_at, deleted_at FROM posts WHERE uuid > $1 ORDER BY created_at DESC LIMIT $2"
 
-	rows, err := postgres.Db.Query(query, offset, limit)
+	rows, err := postgres.Db.Query(query, cursor, limit)
 	if err != nil {
 		return nil, err
 	}

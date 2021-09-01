@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS public.accounts
     updated_at    timestamp,
     deleted_at    timestamp
 );
+CREATE INDEX uuid ON posts(created_at DESC);
 
 
 DROP TABLE IF EXISTS public.posts;

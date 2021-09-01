@@ -21,9 +21,8 @@ type PostFields struct {
 }
 
 type Storage interface {
-	Count() (int, error)
 	One(postId uid.UID) (Post, error)
-	Many(offset int, limit int) ([]Post, error)
+	Many(limit int, cursor uid.UID) ([]Post, error)
 	Update(postId uid.UID, fields PostFields) (uid.UID, error)
 	Insert(userId uid.UID, fields PostFields) (uid.UID, error)
 }
@@ -38,12 +37,8 @@ func (service *Service) Post(postId uid.UID) (Post, error) {
 }
 
 // Posts returns a paginated list of posts
-// We Assume the page value at this point is 1 or above
-func (service *Service) Posts(pageNum int, perPage int) ([]Post, error) {
-	// DB Offset starts at 0
-	offset := (pageNum - 1) * perPage
-
-	return service.storage.Many(offset, perPage)
+func (service *Service) Posts(limit int, cursor uid.UID) ([]Post, error) {
+	return service.storage.Many(limit, cursor)
 }
 
 // New inserts a new Post to the storage
@@ -54,11 +49,6 @@ func (service *Service) New(userId uid.UID, fields PostFields) (uid.UID, error) 
 // Update updates an existing post in the storage
 func (service *Service) Update(postId uid.UID, fields PostFields) (uid.UID, error) {
 	return service.storage.Update(postId, fields)
-}
-
-// Total counts the number of Posts in the storage
-func (service *Service) Total() (int, error) {
-	return service.storage.Count()
 }
 
 // NewService returns a new Posts service instance

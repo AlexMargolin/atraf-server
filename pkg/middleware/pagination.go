@@ -4,21 +4,24 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+
+	"quotes/pkg/rest"
+	"quotes/pkg/uid"
 )
 
 const (
-	PageNumParam = "page"
-	PerPageParam = "per_page"
+	LimitParam  = "limit"
+	CursorParam = "cursor"
 )
 
 const (
-	DefaultPageNum = 1
-	DefaultPerPage = 9
+	DefaultLimit = 9
+	MaxLimit     = 100
 )
 
 type PaginationContext struct {
-	PageNum int
-	PerPage int
+	Limit  int
+	Cursor uid.UID
 }
 
 type paginationContextKey string
@@ -30,43 +33,34 @@ func Pagination(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Default Pagination data
 		pagination := PaginationContext{
-			PageNum: DefaultPageNum,
-			PerPage: DefaultPerPage,
+			Limit: DefaultLimit,
 		}
 
 		// Parse Pagination Params from the request
-		pageNum := r.URL.Query().Get(PageNumParam) // Page Number
-		perPage := r.URL.Query().Get(PerPageParam) // Page Limit
+		limit := r.URL.Query().Get(LimitParam)
+		cursor := r.URL.Query().Get(CursorParam)
 
-		if pageNum != "" {
-			if pageNum, err := strconv.Atoi(pageNum); err == nil {
-				pagination.PageNum = pageNum
+		if limit != "" {
+			if limit, err := strconv.Atoi(limit); err == nil {
+				pagination.Limit = limit
 			}
 		}
 
-		if perPage != "" {
-			if perPage, err := strconv.Atoi(perPage); err == nil {
-				pagination.PerPage = perPage
+		if cursor != "" {
+			if cursor, err := uid.FromString(cursor); err == nil {
+				pagination.Cursor = cursor
 			}
 		}
 
-		// Next & Context
+		// 422
+		if pagination.Limit < 1 || pagination.Limit > MaxLimit {
+			rest.Error(w, http.StatusUnprocessableEntity)
+			return
+		}
+
 		ctx := context.WithValue(r.Context(), PaginationContextKey, &pagination)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
-}
-
-// HasCurrentPage determines whether the current pagination settings would result in anymore data
-func HasCurrentPage(pagination *PaginationContext, total int) bool {
-	// we subtract 1 in order to be able to always show results
-	// at the first page regardless of what perPage value is.
-	// since 0*x will be smaller than total. unless total is also 0.
-	return (pagination.PageNum-1)*pagination.PerPage < total
-}
-
-// HasNextPage determines whether the next pagination settings would result in anymore data
-func HasNextPage(pagination *PaginationContext, total int) bool {
-	return pagination.PageNum*pagination.PerPage < total
 }
 
 // GetPaginationContext returns a pagination request context

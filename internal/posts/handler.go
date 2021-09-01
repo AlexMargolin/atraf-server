@@ -25,9 +25,7 @@ type ReadOneResponse struct {
 }
 
 type ReadManyResponse struct {
-	Total   int    `json:"total"`
-	HasNext bool   `json:"has_next"`
-	Posts   []Post `json:"posts"`
+	Posts []Post `json:"posts"`
 }
 
 type Handler struct {
@@ -125,40 +123,15 @@ func (handler *Handler) ReadMany() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		pagination := middleware.GetPaginationContext(r)
 
-		// 422
-		if pagination.PageNum < 1 || pagination.PerPage < 1 {
-			rest.Error(w, http.StatusUnprocessableEntity)
-			return
-		}
-
 		// 400
-		total, err := handler.service.Total()
+		posts, err := handler.service.Posts(pagination.Limit, pagination.Cursor)
 		if err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
 		}
 
-		// Determines whether current page will return any posts.
-		// Otherwise, we return an empty posts array.
-
 		// 200
-		if !middleware.HasCurrentPage(pagination, total) {
-			rest.Success(w, http.StatusOK, ReadManyResponse{Total: total})
-			return
-		}
-
-		// 400
-		posts, err := handler.service.Posts(pagination.PageNum, pagination.PerPage)
-		if err != nil {
-			rest.Error(w, http.StatusBadRequest)
-			return
-		}
-
-		// Determine whether next page will return any posts
-		hasNext := middleware.HasNextPage(pagination, total)
-
-		// 200
-		rest.Success(w, http.StatusOK, ReadManyResponse{total, hasNext, posts})
+		rest.Success(w, http.StatusOK, ReadManyResponse{posts})
 	}
 }
 
