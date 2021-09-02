@@ -39,6 +39,8 @@ func main() {
 	commentsHandler := comments.NewHandler(commentsService, validate)
 
 	router := chi.NewRouter()
+	router.Use(middleware.Cors)
+	router.Use(middleware.Options)
 
 	// Unauthenticated Routes (Public)
 	// Routes defined under this group do not have access to the Session Context
