@@ -27,20 +27,7 @@ type Postgres struct {
 func (postgres *Postgres) Many(postId uid.UID) ([]Comment, error) {
 	var comments []PostgresComment
 
-	query := `
-	SELECT 
-	       uuid, 
-	       user_uuid, 
-	       post_uuid, 
-	       parent_uuid, 
-	       content, 
-	       created_at, 
-	       updated_at, 
-	       deleted_at 
-	FROM comments 
-	WHERE post_uuid = $1 
-	ORDER BY created_at
-	`
+	query := "SELECT  uuid, user_uuid, post_uuid, parent_uuid, content, created_at, updated_at, deleted_at FROM comments WHERE post_uuid = $1 ORDER BY created_at"
 	if err := postgres.Db.Select(&comments, query, postId); err != nil {
 		return nil, err
 	}
@@ -51,11 +38,7 @@ func (postgres *Postgres) Many(postId uid.UID) ([]Comment, error) {
 func (postgres *Postgres) Insert(userId uid.UID, postId uid.UID, parentId uid.UID, fields CommentFields) (uid.UID, error) {
 	var uuid uid.UID
 
-	query := `
-	INSERT INTO comments (user_uuid, post_uuid, parent_uuid, content) 
-	VALUES ($1, $2, $3, $4) 
-	RETURNING uuid
-	`
+	query := "INSERT INTO comments (user_uuid, post_uuid, parent_uuid, content) VALUES ($1, $2, $3, $4) RETURNING uuid"
 	if err := postgres.Db.Get(&uuid, query, userId, postId, parentId, fields.Content); err != nil {
 		return uuid, err
 	}
@@ -66,12 +49,7 @@ func (postgres *Postgres) Insert(userId uid.UID, postId uid.UID, parentId uid.UI
 func (postgres *Postgres) Update(commentId uid.UID, fields CommentFields) (uid.UID, error) {
 	var uuid uid.UID
 
-	query := `
-	UPDATE comments 
-	SET content = $2 
-	WHERE uuid = $1 
-	RETURNING uuid
-	`
+	query := "UPDATE comments SET content = $2 WHERE uuid = $1 RETURNING uuid"
 	if err := postgres.Db.Get(&uuid, query, commentId, fields.Content); err != nil {
 		return uuid, err
 	}

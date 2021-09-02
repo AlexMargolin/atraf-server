@@ -25,17 +25,7 @@ type Postgres struct {
 func (postgres Postgres) One(postId uid.UID) (Post, error) {
 	var post PostgresPost
 
-	query := `
-	SELECT uuid,
-	       user_uuid,
-	       content,
-	       created_at,
-	       updated_at,
-	       deleted_at 
-	FROM posts 
-	WHERE uuid = $1 
-	LIMIT 1
-	`
+	query := "SELECT uuid, user_uuid, content, created_at, updated_at, deleted_at FROM posts WHERE uuid = $1 LIMIT 1"
 	if err := postgres.Db.Get(&post, query, postId); err != nil {
 		return Post{}, err
 	}
@@ -46,18 +36,7 @@ func (postgres Postgres) One(postId uid.UID) (Post, error) {
 func (postgres Postgres) Many(limit int, cursor uid.UID) ([]Post, error) {
 	var posts []PostgresPost
 
-	query := `
-	SELECT uuid,
-	       user_uuid,
-	       content,
-	       created_at,
-	       updated_at,
-	       deleted_at 
-	FROM posts 
-	WHERE uuid > $1 
-	ORDER BY created_at 
-	DESC LIMIT $2
-	`
+	query := "SELECT uuid, user_uuid, content, created_at, updated_at, deleted_at FROM posts WHERE uuid > $1 ORDER BY created_at DESC LIMIT $2"
 	if err := postgres.Db.Select(&posts, query, cursor, limit); err != nil {
 		return nil, err
 	}
@@ -68,11 +47,7 @@ func (postgres Postgres) Many(limit int, cursor uid.UID) ([]Post, error) {
 func (postgres Postgres) Insert(userId uid.UID, fields PostFields) (uid.UID, error) {
 	var uuid uid.UID
 
-	query := `
-	INSERT INTO posts (user_uuid, content) 
-	VALUES ($1, $2) 
-	RETURNING uuid
-	`
+	query := "INSERT INTO posts (user_uuid, content) VALUES ($1, $2) RETURNING uuid"
 	if err := postgres.Db.Get(&uuid, query, userId, fields.Content); err != nil {
 		return uuid, err
 	}
@@ -83,12 +58,7 @@ func (postgres Postgres) Insert(userId uid.UID, fields PostFields) (uid.UID, err
 func (postgres Postgres) Update(postId uid.UID, fields PostFields) (uid.UID, error) {
 	var uuid uid.UID
 
-	query := `
-	UPDATE posts 
-	SET content = $2 
-	WHERE uuid = $1 
-	RETURNING uuid
-	`
+	query := "UPDATE posts SET content = $2 WHERE uuid = $1 RETURNING uuid"
 	if err := postgres.Db.Get(&uuid, query, postId, fields.Content); err != nil {
 		return uuid, err
 	}
