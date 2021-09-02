@@ -25,7 +25,7 @@ type Postgres struct {
 func (postgres Postgres) One(postId uid.UID) (Post, error) {
 	var post PostgresPost
 
-	query := "SELECT uuid,user_uuid,content,created_at,updated_at,deleted_at FROM posts WHERE uuid = $1 LIMIT 1"
+	query := "SELECT uuid, user_uuid, content, created_at, updated_at, deleted_at FROM posts WHERE uuid = $1 LIMIT 1"
 	if err := postgres.Db.Get(&post, query, postId); err != nil {
 		return Post{}, err
 	}
@@ -36,7 +36,7 @@ func (postgres Postgres) One(postId uid.UID) (Post, error) {
 func (postgres Postgres) Many(limit int, cursor uid.UID) ([]Post, error) {
 	var posts []PostgresPost
 
-	query := "SELECT uuid,user_uuid,content,created_at,updated_at,deleted_at FROM posts WHERE uuid > $1 ORDER BY created_at DESC LIMIT $2"
+	query := "SELECT uuid, user_uuid, content, created_at, updated_at, deleted_at FROM posts WHERE uuid > $1 ORDER BY created_at DESC LIMIT $2"
 	if err := postgres.Db.Select(&posts, query, cursor, limit); err != nil {
 		return nil, err
 	}

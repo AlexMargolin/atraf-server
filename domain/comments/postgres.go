@@ -27,7 +27,7 @@ type Postgres struct {
 func (postgres *Postgres) Many(postId uid.UID) ([]Comment, error) {
 	var comments []PostgresComment
 
-	query := "SELECT  uuid,  user_uuid,  post_uuid,  parent_uuid, content, created_at, updated_at, deleted_at FROM comments WHERE post_uuid = $1 ORDER BY created_at"
+	query := "SELECT  uuid, user_uuid, post_uuid, parent_uuid, content, created_at, updated_at, deleted_at FROM comments WHERE post_uuid = $1 ORDER BY created_at"
 	if err := postgres.Db.Select(&comments, query, postId); err != nil {
 		return nil, err
 	}
