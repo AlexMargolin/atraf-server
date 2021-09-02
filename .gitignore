@@ -1,6 +1,7 @@
 .idea
 .run
 *.bin
+*.exe
 .env
 .env.*
 !.env.example
