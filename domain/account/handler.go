@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"quotes/pkg/rest"
-	"quotes/pkg/token"
-	"quotes/pkg/uid"
-	"quotes/pkg/validator"
+	"atraf-server/pkg/rest"
+	"atraf-server/pkg/token"
+	"atraf-server/pkg/uid"
+	"atraf-server/pkg/validator"
 )
 
 type RegisterRequest struct {

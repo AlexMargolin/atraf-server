@@ -6,10 +6,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"quotes/pkg/middleware"
-	"quotes/pkg/rest"
-	"quotes/pkg/uid"
-	"quotes/pkg/validator"
+	"atraf-server/pkg/middleware"
+	"atraf-server/pkg/rest"
+	"atraf-server/pkg/uid"
+	"atraf-server/pkg/validator"
 )
 
 type CreateRequest struct {

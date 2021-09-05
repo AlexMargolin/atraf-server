@@ -5,7 +5,7 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"quotes/pkg/uid"
+	"atraf-server/pkg/uid"
 )
 
 type Account struct {

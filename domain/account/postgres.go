@@ -6,7 +6,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 
-	"quotes/pkg/uid"
+	"atraf-server/pkg/uid"
 )
 
 type PostgresAccount struct {

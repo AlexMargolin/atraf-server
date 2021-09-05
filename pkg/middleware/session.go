@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	"quotes/pkg/rest"
-	"quotes/pkg/token"
-	"quotes/pkg/uid"
+	"atraf-server/pkg/rest"
+	"atraf-server/pkg/token"
+	"atraf-server/pkg/uid"
 )
 
 type sessionContextKey string

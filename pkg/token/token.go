@@ -6,7 +6,7 @@ import (
 
 	"github.com/golang-jwt/jwt"
 
-	"quotes/pkg/uid"
+	"atraf-server/pkg/uid"
 )
 
 var AccessTokenSecret = os.Getenv("ACCESS_TOKEN_SECRET")

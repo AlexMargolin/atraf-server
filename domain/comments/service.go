@@ -3,7 +3,7 @@ package comments
 import (
 	"time"
 
-	"quotes/pkg/uid"
+	"atraf-server/pkg/uid"
 )
 
 type Comment struct {
@@ -11,7 +11,7 @@ type Comment struct {
 	UserId    uid.UID   `json:"user_id"`
 	PostId    uid.UID   `json:"post_id"`
 	ParentId  uid.UID   `json:"parent_id"`
-	Content   string    `json:"content"`
+	Body      string    `json:"body"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -19,7 +19,7 @@ type Comment struct {
 // CommentFields is a struct representing all Comment values
 // which can be modified by the client.
 type CommentFields struct {
-	Content string `json:"content" validate:"required"`
+	Body string `json:"body" validate:"required"`
 }
 
 type Storage interface {

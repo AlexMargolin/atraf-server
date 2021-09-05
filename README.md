@@ -22,6 +22,8 @@
 20. ~~refactor pagination = replace offset with cursor~~
 21. server logger
 22. enable server tls
+23. map json response values to 2 letters
+24. create updated at trigger
 
 # Features
 

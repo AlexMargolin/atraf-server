@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"quotes/pkg/rest"
-	"quotes/pkg/uid"
+	"atraf-server/pkg/rest"
+	"atraf-server/pkg/uid"
 )
 
 const (

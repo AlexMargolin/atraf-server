@@ -5,13 +5,13 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"quotes/domain/account"
-	"quotes/domain/comments"
-	"quotes/domain/posts"
+	"atraf-server/domain/account"
+	"atraf-server/domain/comments"
+	"atraf-server/domain/posts"
 
-	"quotes/app"
-	"quotes/pkg/middleware"
-	"quotes/pkg/validator"
+	"atraf-server/app"
+	"atraf-server/pkg/middleware"
+	"atraf-server/pkg/validator"
 )
 
 func main() {

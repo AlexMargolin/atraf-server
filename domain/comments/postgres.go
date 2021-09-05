@@ -6,7 +6,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 
-	"quotes/pkg/uid"
+	"atraf-server/pkg/uid"
 )
 
 type PostgresComment struct {
@@ -14,7 +14,7 @@ type PostgresComment struct {
 	UserUuid   uid.UID      `db:"user_uuid"`
 	PostUuid   uid.UID      `db:"post_uuid"`
 	ParentUuid uid.UID      `db:"parent_uuid"`
-	Content    string       `db:"content"`
+	Body       string       `db:"body"`
 	CreatedAt  time.Time    `db:"created_at"`
 	UpdatedAt  sql.NullTime `db:"updated_at"`
 	DeletedAt  sql.NullTime `db:"deleted_at"`
@@ -27,7 +27,7 @@ type Postgres struct {
 func (postgres *Postgres) Many(postId uid.UID) ([]Comment, error) {
 	var comments []PostgresComment
 
-	query := "SELECT  uuid, user_uuid, post_uuid, parent_uuid, content, created_at, updated_at, deleted_at FROM comments WHERE post_uuid = $1 ORDER BY created_at"
+	query := "SELECT  uuid, user_uuid, post_uuid, parent_uuid, body, created_at, updated_at, deleted_at FROM comments WHERE post_uuid = $1 ORDER BY created_at"
 	if err := postgres.Db.Select(&comments, query, postId); err != nil {
 		return nil, err
 	}
@@ -38,8 +38,8 @@ func (postgres *Postgres) Many(postId uid.UID) ([]Comment, error) {
 func (postgres *Postgres) Insert(userId uid.UID, postId uid.UID, parentId uid.UID, fields CommentFields) (uid.UID, error) {
 	var uuid uid.UID
 
-	query := "INSERT INTO comments (user_uuid, post_uuid, parent_uuid, content) VALUES ($1, $2, $3, $4) RETURNING uuid"
-	if err := postgres.Db.Get(&uuid, query, userId, postId, parentId, fields.Content); err != nil {
+	query := "INSERT INTO comments (user_uuid, post_uuid, parent_uuid, body) VALUES ($1, $2, $3, $4) RETURNING uuid"
+	if err := postgres.Db.Get(&uuid, query, userId, postId, parentId, fields.Body); err != nil {
 		return uuid, err
 	}
 
@@ -49,8 +49,8 @@ func (postgres *Postgres) Insert(userId uid.UID, postId uid.UID, parentId uid.UI
 func (postgres *Postgres) Update(commentId uid.UID, fields CommentFields) (uid.UID, error) {
 	var uuid uid.UID
 
-	query := "UPDATE comments SET content = $2 WHERE uuid = $1 RETURNING uuid"
-	if err := postgres.Db.Get(&uuid, query, commentId, fields.Content); err != nil {
+	query := "UPDATE comments SET body = $2 WHERE uuid = $1 RETURNING uuid"
+	if err := postgres.Db.Get(&uuid, query, commentId, fields.Body); err != nil {
 		return uuid, err
 	}
 
@@ -63,7 +63,7 @@ func prepareOne(pc PostgresComment) Comment {
 		UserId:    pc.UserUuid,
 		PostId:    pc.PostUuid,
 		ParentId:  pc.ParentUuid,
-		Content:   pc.Content,
+		Body:      pc.Body,
 		CreatedAt: pc.CreatedAt,
 		UpdatedAt: pc.UpdatedAt.Time,
 	}

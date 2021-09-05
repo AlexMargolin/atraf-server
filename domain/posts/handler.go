@@ -6,10 +6,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"quotes/pkg/middleware"
-	"quotes/pkg/rest"
-	"quotes/pkg/uid"
-	"quotes/pkg/validator"
+	"atraf-server/pkg/middleware"
+	"atraf-server/pkg/rest"
+	"atraf-server/pkg/uid"
+	"atraf-server/pkg/validator"
 )
 
 type CreateResponse struct {
@@ -25,7 +25,8 @@ type ReadOneResponse struct {
 }
 
 type ReadManyResponse struct {
-	Posts []Post `json:"posts"`
+	NextCursor string `json:"next_cursor"`
+	Posts      []Post `json:"posts"`
 }
 
 type Handler struct {
@@ -121,17 +122,26 @@ func (handler *Handler) ReadOne() http.HandlerFunc {
 
 func (handler *Handler) ReadMany() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		var nextCursor string
+
 		pagination := middleware.GetPaginationContext(r)
 
+		// we want to get the next post as well to determine whether there is a next page.
+		limit := pagination.Limit + 1
+
 		// 400
-		posts, err := handler.service.Posts(pagination.Limit, pagination.Cursor)
+		posts, err := handler.service.Posts(limit, pagination.Cursor)
 		if err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
 		}
 
+		if len(posts) == limit {
+			nextCursor = posts[len(posts)-2].Id.String()
+		}
+
 		// 200
-		rest.Success(w, http.StatusOK, ReadManyResponse{posts})
+		rest.Success(w, http.StatusOK, ReadManyResponse{nextCursor, posts})
 	}
 }
 

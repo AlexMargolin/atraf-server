@@ -3,13 +3,13 @@ package posts
 import (
 	"time"
 
-	"quotes/pkg/uid"
+	"atraf-server/pkg/uid"
 )
 
 type Post struct {
 	Id        uid.UID   `json:"id"`
 	UserId    uid.UID   `json:"user_id"`
-	Content   string    `json:"content"`
+	Body      string    `json:"body"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -17,7 +17,7 @@ type Post struct {
 // PostFields is a struct representing all Post values
 // which can be modified by the client.
 type PostFields struct {
-	Content string `json:"content" validate:"required"`
+	Body string `json:"body" validate:"required"`
 }
 
 type Storage interface {
