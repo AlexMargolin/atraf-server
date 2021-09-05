@@ -24,21 +24,19 @@ type SessionContext struct {
 
 func Session(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// 401
+
 		unverifiedToken, err := BearerToken(r)
 		if err != nil {
 			rest.Error(w, http.StatusUnauthorized)
 			return
 		}
 
-		// 401
 		claims, err := token.Verify(unverifiedToken)
 		if err != nil {
 			rest.Error(w, http.StatusUnauthorized)
 			return
 		}
 
-		// 500
 		accountId, err := uid.FromString(claims.Subject)
 		if err != nil {
 			rest.Error(w, http.StatusInternalServerError)

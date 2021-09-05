@@ -49,7 +49,6 @@ func Pagination(next http.Handler) http.Handler {
 			}
 		}
 
-		// 422
 		if pagination.Limit < 1 || pagination.Limit > MaxLimit {
 			rest.Error(w, http.StatusUnprocessableEntity)
 			return

@@ -19,7 +19,7 @@ func Success(w http.ResponseWriter, code int, data ...interface{}) {
 
 	responseJson, err := json.Marshal(response)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError) // 500
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 

@@ -40,26 +40,22 @@ func (handler *Handler) Create() http.HandlerFunc {
 
 		session := middleware.GetSessionContext(r)
 
-		// 400
 		if err := json.NewDecoder(r.Body).Decode(&fields); err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
 		}
 
-		// 422
 		if err := handler.validator.Struct(fields); err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity)
 			return
 		}
 
-		// 400
 		postId, err := handler.service.New(session.AccountId, fields)
 		if err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
 		}
 
-		// 201
 		rest.Success(w, http.StatusCreated, CreateResponse{postId})
 	}
 }
@@ -68,54 +64,46 @@ func (handler *Handler) Update() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var fields PostFields
 
-		// 422
 		postId, err := uid.FromString(chi.URLParam(r, "post_id"))
 		if err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity)
 			return
 		}
 
-		// 400
 		if err = json.NewDecoder(r.Body).Decode(&fields); err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
 		}
 
-		// 422
 		if err = handler.validator.Struct(fields); err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity)
 			return
 		}
 
-		// 400
 		postId, err = handler.service.Update(postId, fields)
 		if err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
 		}
 
-		// 200
 		rest.Success(w, http.StatusOK, UpdateResponse{postId})
 	}
 }
 
 func (handler *Handler) ReadOne() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// 422
 		postId, err := uid.FromString(chi.URLParam(r, "post_id"))
 		if err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity)
 			return
 		}
 
-		// 404
 		post, err := handler.service.Post(postId)
 		if err != nil {
 			rest.Error(w, http.StatusNotFound)
 			return
 		}
 
-		// 200
 		rest.Success(w, http.StatusOK, ReadOneResponse{post})
 	}
 }
@@ -129,7 +117,6 @@ func (handler *Handler) ReadMany() http.HandlerFunc {
 		// we want to get the next post as well to determine whether there is a next page.
 		limit := pagination.Limit + 1
 
-		// 400
 		posts, err := handler.service.Posts(limit, pagination.Cursor)
 		if err != nil {
 			rest.Error(w, http.StatusBadRequest)
@@ -140,7 +127,6 @@ func (handler *Handler) ReadMany() http.HandlerFunc {
 			nextCursor = posts[len(posts)-2].Id.String()
 		}
 
-		// 200
 		rest.Success(w, http.StatusOK, ReadManyResponse{nextCursor, posts})
 	}
 }
