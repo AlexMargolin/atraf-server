@@ -36,7 +36,6 @@ func Success(w http.ResponseWriter, code int, data ...interface{}) {
 }
 
 func Error(w http.ResponseWriter, code int) {
-	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
 	w.WriteHeader(code)
