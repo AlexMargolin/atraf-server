@@ -8,6 +8,7 @@ import (
 	"atraf-server/domain/account"
 	"atraf-server/domain/comments"
 	"atraf-server/domain/posts"
+	"atraf-server/domain/users"
 
 	"atraf-server/app"
 	"atraf-server/pkg/middleware"
@@ -29,6 +30,10 @@ func main() {
 	accountStorage := account.NewStorage(db)
 	accountService := account.NewService(accountStorage)
 	accountHandler := account.NewHandler(accountService, validate)
+
+	usersStorage := users.NewStorage(db)
+	usersService := users.NewService(usersStorage)
+	usersHandler := users.NewHandler(usersService, validate)
 
 	postsStorage := posts.NewStorage(db)
 	postsService := posts.NewService(postsStorage)
@@ -54,6 +59,10 @@ func main() {
 	// Routes defined under this group have access to the Session Context
 	router.Group(func(router chi.Router) {
 		router.Use(middleware.Session)
+
+		// Users
+		router.Post("/users", usersHandler.Create())
+		router.Get("/users/{user_id}", usersHandler.ReadOne())
 
 		// Posts
 		router.Post("/posts", postsHandler.Create())

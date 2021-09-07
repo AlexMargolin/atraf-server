@@ -34,3 +34,16 @@ CREATE TABLE IF NOT EXISTS public.comments
     updated_at  timestamp,
     deleted_at  timestamp
 );
+
+DROP TABLE IF EXISTS public.users;
+CREATE TABLE IF NOT EXISTS public.users
+(
+    uuid            uuid      NOT NULL PRIMARY KEY default gen_random_uuid(),
+    email           text UNIQUE,
+    first_name      text,
+    last_name       text,
+    profile_picture text,
+    created_at      timestamp NOT NULL             default current_timestamp,
+    updated_at      timestamp,
+    deleted_at      timestamp
+)
