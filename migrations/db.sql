@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS public.comments
 (
     uuid        uuid      NOT NULL PRIMARY KEY default gen_random_uuid(),
     user_uuid   uuid      NOT NULL, /*index*/
-    post_uuid   uuid      NOT NULL, /*index*/
+    source_uuid uuid      NOT NULL, /*index*/
     parent_uuid uuid      NOT NULL,
     body        text,
     created_at  timestamp NOT NULL             default current_timestamp,

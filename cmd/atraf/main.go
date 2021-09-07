@@ -72,7 +72,7 @@ func main() {
 
 		// Comments
 		router.Post("/comments", commentsHandler.Create())
-		router.Get("/comments/{post_id}", commentsHandler.ReadMany())
+		router.Get("/comments/{source_id}", commentsHandler.ReadMany())
 		router.Put("/comments/{comment_id}", commentsHandler.Update())
 	})
 
