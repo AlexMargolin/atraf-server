@@ -19,11 +19,11 @@ type CreateRequest struct {
 }
 
 type CreateResponse struct {
-	CommentId uid.UID `json:"id"`
+	CommentId uid.UID `json:"comment_id"`
 }
 
 type UpdateResponse struct {
-	CommentId uid.UID `json:"id"`
+	CommentId uid.UID `json:"comment_id"`
 }
 
 type ReadManyResponse struct {

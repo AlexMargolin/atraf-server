@@ -13,11 +13,11 @@ import (
 )
 
 type CreateResponse struct {
-	PostId uid.UID `json:"id"`
+	PostId uid.UID `json:"post_id"`
 }
 
 type UpdateResponse struct {
-	PostId uid.UID `json:"id"`
+	PostId uid.UID `json:"post_id"`
 }
 
 type ReadOneResponse struct {
