@@ -25,6 +25,7 @@
 23. map json response values to 2 letters
 24. create updated at trigger
 25. create indexes on created_at
+26. change {Domain}Fields to Data
 
 # Features
 

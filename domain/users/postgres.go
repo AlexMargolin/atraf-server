@@ -25,11 +25,22 @@ type Postgres struct {
 	Db *sqlx.DB
 }
 
-func (postgres Postgres) One(userId uid.UID) (User, error) {
+func (postgres Postgres) ById(userId uid.UID) (User, error) {
 	var user PostgresUser
 
 	query := "SELECT uuid, account_uuid, email, first_name, last_name, profile_picture, created_at, updated_at, deleted_at FROM users WHERE uuid = $1 LIMIT 1"
 	if err := postgres.Db.Get(&user, query, userId); err != nil {
+		return User{}, err
+	}
+
+	return prepareOne(user), nil
+}
+
+func (postgres Postgres) ByAccountId(accountId uid.UID) (User, error) {
+	var user PostgresUser
+
+	query := "SELECT uuid, account_uuid, email, first_name, last_name, profile_picture, created_at, updated_at, deleted_at FROM users WHERE account_uuid = $1 LIMIT 1"
+	if err := postgres.Db.Get(&user, query, accountId); err != nil {
 		return User{}, err
 	}
 

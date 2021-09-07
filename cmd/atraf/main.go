@@ -58,10 +58,9 @@ func main() {
 	// Authenticated Routes (Private)
 	// Routes defined under this group have access to the Session Context
 	router.Group(func(router chi.Router) {
-		router.Use(middleware.Session)
+		router.Use(middleware.Session(usersService))
 
 		// Users
-		// router.Post("/users", usersHandler.Create())
 		router.Get("/users/{user_id}", usersHandler.ReadOne())
 
 		// Posts

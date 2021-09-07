@@ -2,10 +2,9 @@ package middleware
 
 import (
 	"context"
-	"errors"
 	"net/http"
-	"strings"
 
+	"atraf-server/domain/users"
 	"atraf-server/pkg/rest"
 	"atraf-server/pkg/token"
 	"atraf-server/pkg/uid"
@@ -20,50 +19,40 @@ const (
 
 type SessionContext struct {
 	AccountId uid.UID
+	UserId    uid.UID
 }
 
-func Session(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func Session(service *users.Service) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			unverifiedToken, err := token.FromHeader(r, AuthTokenHeader)
+			if err != nil {
+				rest.Error(w, http.StatusUnauthorized)
+				return
+			}
 
-		unverifiedToken, err := BearerToken(r)
-		if err != nil {
-			rest.Error(w, http.StatusUnauthorized)
-			return
-		}
+			claims, err := token.Verify(unverifiedToken)
+			if err != nil {
+				rest.Error(w, http.StatusUnauthorized)
+				return
+			}
 
-		claims, err := token.Verify(unverifiedToken)
-		if err != nil {
-			rest.Error(w, http.StatusUnauthorized)
-			return
-		}
+			accountId, err := uid.FromString(claims.Subject)
+			if err != nil {
+				rest.Error(w, http.StatusInternalServerError)
+				return
+			}
 
-		accountId, err := uid.FromString(claims.Subject)
-		if err != nil {
-			rest.Error(w, http.StatusInternalServerError)
-			return
-		}
+			user, err := service.ByAccount(accountId)
+			if err != nil {
+				rest.Error(w, http.StatusUnauthorized)
+				return
+			}
 
-		sessionContext := &SessionContext{
-			AccountId: accountId,
-		}
-
-		ctx := context.WithValue(r.Context(), SessionContextKey, sessionContext)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
-func BearerToken(r *http.Request) (string, error) {
-	header := r.Header.Get(AuthTokenHeader)
-	if header == "" {
-		return "", errors.New("missing auth header")
+			ctx := context.WithValue(r.Context(), SessionContextKey, &SessionContext{accountId, user.Id})
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
 	}
-
-	splitHeader := strings.Split(header, "Bearer ")
-	if len(splitHeader) != 2 {
-		return "", errors.New("invalid auth header")
-	}
-
-	return splitHeader[1], nil
 }
 
 func GetSessionContext(request *http.Request) *SessionContext {

@@ -38,7 +38,6 @@ type Handler struct {
 func (handler *Handler) Create() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request CreateRequest
-
 		session := middleware.GetSessionContext(r)
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -51,7 +50,7 @@ func (handler *Handler) Create() http.HandlerFunc {
 			return
 		}
 
-		commentId, err := handler.service.New(session.AccountId, request.SourceId, request.ParentId, request.CommentFields)
+		commentId, err := handler.service.New(session.UserId, request.SourceId, request.ParentId, request.CommentFields)
 		if err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
@@ -93,7 +92,6 @@ func (handler *Handler) Update() http.HandlerFunc {
 
 func (handler *Handler) ReadMany() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		sourceId, err := uid.FromString(chi.URLParam(r, "source_id"))
 		if err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity)
