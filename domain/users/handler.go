@@ -31,7 +31,7 @@ func (handler *Handler) ReadOne() http.HandlerFunc {
 			return
 		}
 
-		user, err := handler.service.User(userId)
+		user, err := handler.service.UserById(userId)
 		if err != nil {
 			rest.Error(w, http.StatusNotFound)
 			return

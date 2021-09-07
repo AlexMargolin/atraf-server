@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"atraf-server/domain/users"
 	"atraf-server/pkg/middleware"
 	"atraf-server/pkg/rest"
 	"atraf-server/pkg/uid"
@@ -27,7 +28,8 @@ type UpdateResponse struct {
 }
 
 type ReadManyResponse struct {
-	Comments []Comment `json:"comments"`
+	Comments []Comment    `json:"comments"`
+	Users    []users.User `json:"users"`
 }
 
 type Handler struct {
@@ -90,7 +92,7 @@ func (handler *Handler) Update() http.HandlerFunc {
 	}
 }
 
-func (handler *Handler) ReadMany() http.HandlerFunc {
+func (handler *Handler) ReadMany(u *users.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		sourceId, err := uid.FromString(chi.URLParam(r, "source_id"))
 		if err != nil {
@@ -104,7 +106,20 @@ func (handler *Handler) ReadMany() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusOK, ReadManyResponse{comments})
+		// exit early
+		if len(comments) == 0 {
+			rest.Success(w, http.StatusOK, ReadManyResponse{})
+			return
+		}
+
+		commentsUserIds := UserIds(comments)
+		commentsUsers, err := u.UsersByIds(commentsUserIds)
+		if err != nil {
+			rest.Error(w, http.StatusInternalServerError)
+			return
+		}
+
+		rest.Success(w, http.StatusOK, ReadManyResponse{comments, commentsUsers})
 	}
 }
 

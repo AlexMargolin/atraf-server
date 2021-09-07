@@ -36,6 +36,23 @@ func (postgres Postgres) ById(userId uid.UID) (User, error) {
 	return prepareOne(user), nil
 }
 
+func (postgres Postgres) ByIds(userIds []uid.UID) ([]User, error) {
+	var users []PostgresUser
+
+	query := "SELECT uuid, account_uuid, email, first_name, last_name, profile_picture, created_at, updated_at, deleted_at FROM users WHERE uuid IN (?)"
+	query, args, err := sqlx.In(query, userIds)
+	if err != nil {
+		return []User{}, err
+	}
+	query = postgres.Db.Rebind(query)
+
+	if err := postgres.Db.Select(&users, query, args...); err != nil {
+		return []User{}, err
+	}
+
+	return prepareMany(users), nil
+}
+
 func (postgres Postgres) ByAccountId(accountId uid.UID) (User, error) {
 	var user PostgresUser
 

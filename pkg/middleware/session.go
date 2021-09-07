@@ -22,7 +22,7 @@ type SessionContext struct {
 	UserId    uid.UID
 }
 
-func Session(service *users.Service) func(http.Handler) http.Handler {
+func Session(u *users.Service) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			unverifiedToken, err := token.FromHeader(r, AuthTokenHeader)
@@ -43,7 +43,7 @@ func Session(service *users.Service) func(http.Handler) http.Handler {
 				return
 			}
 
-			user, err := service.ByAccount(accountId)
+			user, err := u.UserByAccount(accountId)
 			if err != nil {
 				rest.Error(w, http.StatusUnauthorized)
 				return

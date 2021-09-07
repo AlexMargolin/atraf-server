@@ -23,6 +23,7 @@ type UserFields struct {
 
 type Storage interface {
 	ById(userId uid.UID) (User, error)
+	ByIds(userIds []uid.UID) ([]User, error)
 	ByAccountId(accountID uid.UID) (User, error)
 	Insert(accountId uid.UID, fields UserFields) (uid.UID, error)
 }
@@ -31,15 +32,19 @@ type Service struct {
 	storage Storage
 }
 
-func (service *Service) User(userId uid.UID) (User, error) {
+func (service *Service) UserById(userId uid.UID) (User, error) {
 	return service.storage.ById(userId)
 }
 
-func (service *Service) ByAccount(accountId uid.UID) (User, error) {
+func (service *Service) UsersByIds(userIds []uid.UID) ([]User, error) {
+	return service.storage.ByIds(userIds)
+}
+
+func (service *Service) UserByAccount(accountId uid.UID) (User, error) {
 	return service.storage.ByAccountId(accountId)
 }
 
-func (service *Service) New(accountId uid.UID, fields UserFields) (uid.UID, error) {
+func (service *Service) NewUser(accountId uid.UID, fields UserFields) (uid.UID, error) {
 	return service.storage.Insert(accountId, fields)
 }
 

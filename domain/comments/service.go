@@ -44,6 +44,21 @@ func (service *Service) Comments(sourceId uid.UID) ([]Comment, error) {
 	return service.storage.Many(sourceId)
 }
 
+func UserIds(comments []Comment) []uid.UID {
+	userIds := make([]uid.UID, 0)
+	m := make(map[uid.UID]bool, 0)
+
+	for _, comment := range comments {
+		if m[comment.UserId] {
+			continue
+		}
+		m[comment.UserId] = true
+		userIds = append(userIds, comment.UserId)
+	}
+
+	return userIds
+}
+
 func NewService(storage Storage) *Service {
 	return &Service{storage}
 }
