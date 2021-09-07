@@ -77,7 +77,7 @@ func prepareOne(pp PostgresPost) Post {
 }
 
 func prepareMany(pp []PostgresPost) []Post {
-	var posts = make([]Post, len(pp))
+	var posts = make([]Post, 0)
 
 	for _, post := range pp {
 		posts = append(posts, prepareOne(post))

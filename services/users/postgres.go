@@ -87,7 +87,7 @@ func prepareOne(pu PostgresUser) User {
 }
 
 func prepareMany(pu []PostgresUser) []User {
-	var users = make([]User, len(pu))
+	var users = make([]User, 0)
 
 	for _, post := range pu {
 		users = append(users, prepareOne(post))

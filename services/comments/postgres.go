@@ -70,7 +70,7 @@ func prepareOne(pc PostgresComment) Comment {
 }
 
 func prepareMany(pc []PostgresComment) []Comment {
-	var comments = make([]Comment, len(pc))
+	var comments = make([]Comment, 0)
 
 	for _, comment := range pc {
 		comments = append(comments, prepareOne(comment))
