@@ -34,6 +34,7 @@ type Handler struct {
 	validator *validator.Validator
 }
 
+// Register Depends on: Users
 func (handler *Handler) Register(u *users.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request RegisterRequest
@@ -54,16 +55,14 @@ func (handler *Handler) Register(u *users.Service) http.HandlerFunc {
 			return
 		}
 
-		// Users Domain.
-		// If this needs to be separated, replace this with an api call and remove
-		// the service dependency from the handler
-		userId, err := u.NewUser(accountId, users.UserFields{Email: request.Email})
+		// TODO replace with endpoint
+		__userId, err := u.NewUser(accountId, users.UserFields{Email: request.Email})
 		if err != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
 		}
 
-		rest.Success(w, http.StatusCreated, RegisterResponse{userId})
+		rest.Success(w, http.StatusCreated, RegisterResponse{__userId})
 	}
 }
 

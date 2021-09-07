@@ -52,7 +52,7 @@ func (handler *Handler) Create() http.HandlerFunc {
 			return
 		}
 
-		commentId, err := handler.service.New(session.UserId, request.SourceId, request.ParentId, request.CommentFields)
+		commentId, err := handler.service.NewComment(session.UserId, request.SourceId, request.ParentId, request.CommentFields)
 		if err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
@@ -82,7 +82,7 @@ func (handler *Handler) Update() http.HandlerFunc {
 			return
 		}
 
-		commentId, err = handler.service.Update(commentId, fields)
+		commentId, err = handler.service.UpdateComment(commentId, fields)
 		if err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
@@ -92,6 +92,7 @@ func (handler *Handler) Update() http.HandlerFunc {
 	}
 }
 
+// ReadMany Depends on: Users
 func (handler *Handler) ReadMany(u *users.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		sourceId, err := uid.FromString(chi.URLParam(r, "source_id"))
@@ -100,26 +101,27 @@ func (handler *Handler) ReadMany(u *users.Service) http.HandlerFunc {
 			return
 		}
 
-		comments, err := handler.service.Comments(sourceId)
+		comments, err := handler.service.CommentsBySourceId(sourceId)
 		if err != nil {
 			rest.Error(w, http.StatusNotFound)
 			return
 		}
 
-		// exit early
 		if len(comments) == 0 {
 			rest.Success(w, http.StatusOK, ReadManyResponse{})
 			return
 		}
 
-		commentsUserIds := UserIds(comments)
-		commentsUsers, err := u.UsersByIds(commentsUserIds)
+		commentsUserIds := UniqueUserIds(comments)
+
+		// TODO replace with endpoint
+		__users, err := u.UsersByIds(commentsUserIds)
 		if err != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
 		}
 
-		rest.Success(w, http.StatusOK, ReadManyResponse{comments, commentsUsers})
+		rest.Success(w, http.StatusOK, ReadManyResponse{comments, __users})
 	}
 }
 

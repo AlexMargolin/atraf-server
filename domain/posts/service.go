@@ -31,19 +31,19 @@ type Service struct {
 	storage Storage
 }
 
-func (service *Service) Post(postId uid.UID) (Post, error) {
+func (service *Service) PostById(postId uid.UID) (Post, error) {
 	return service.storage.One(postId)
 }
 
-func (service *Service) Posts(limit int, cursor uid.UID) ([]Post, error) {
+func (service *Service) ListPosts(limit int, cursor uid.UID) ([]Post, error) {
 	return service.storage.Many(limit, cursor)
 }
 
-func (service *Service) New(userId uid.UID, fields PostFields) (uid.UID, error) {
+func (service *Service) NewPost(userId uid.UID, fields PostFields) (uid.UID, error) {
 	return service.storage.Insert(userId, fields)
 }
 
-func (service *Service) Update(postId uid.UID, fields PostFields) (uid.UID, error) {
+func (service *Service) UpdatePost(postId uid.UID, fields PostFields) (uid.UID, error) {
 	return service.storage.Update(postId, fields)
 }
 

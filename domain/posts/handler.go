@@ -49,7 +49,7 @@ func (handler *Handler) Create() http.HandlerFunc {
 			return
 		}
 
-		postId, err := handler.service.New(session.UserId, fields)
+		postId, err := handler.service.NewPost(session.UserId, fields)
 		if err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
@@ -79,7 +79,7 @@ func (handler *Handler) Update() http.HandlerFunc {
 			return
 		}
 
-		postId, err = handler.service.Update(postId, fields)
+		postId, err = handler.service.UpdatePost(postId, fields)
 		if err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
@@ -97,7 +97,7 @@ func (handler *Handler) ReadOne() http.HandlerFunc {
 			return
 		}
 
-		post, err := handler.service.Post(postId)
+		post, err := handler.service.PostById(postId)
 		if err != nil {
 			rest.Error(w, http.StatusNotFound)
 			return
@@ -115,7 +115,7 @@ func (handler *Handler) ReadMany() http.HandlerFunc {
 		// we want to get the next post as well to determine whether there is a next page.
 		limit := pagination.Limit + 1
 
-		posts, err := handler.service.Posts(limit, pagination.Cursor)
+		posts, err := handler.service.ListPosts(limit, pagination.Cursor)
 		if err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return

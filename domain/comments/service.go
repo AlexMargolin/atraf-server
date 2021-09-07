@@ -32,19 +32,19 @@ type Service struct {
 	storage Storage
 }
 
-func (service *Service) New(userId uid.UID, sourceId uid.UID, parentId uid.UID, fields CommentFields) (uid.UID, error) {
+func (service *Service) NewComment(userId uid.UID, sourceId uid.UID, parentId uid.UID, fields CommentFields) (uid.UID, error) {
 	return service.storage.Insert(userId, sourceId, parentId, fields)
 }
 
-func (service *Service) Update(commentId uid.UID, fields CommentFields) (uid.UID, error) {
+func (service *Service) UpdateComment(commentId uid.UID, fields CommentFields) (uid.UID, error) {
 	return service.storage.Update(commentId, fields)
 }
 
-func (service *Service) Comments(sourceId uid.UID) ([]Comment, error) {
+func (service *Service) CommentsBySourceId(sourceId uid.UID) ([]Comment, error) {
 	return service.storage.Many(sourceId)
 }
 
-func UserIds(comments []Comment) []uid.UID {
+func UniqueUserIds(comments []Comment) []uid.UID {
 	userIds := make([]uid.UID, 0)
 	m := make(map[uid.UID]bool, 0)
 
