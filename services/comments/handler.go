@@ -6,11 +6,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"atraf-server/domain/users"
 	"atraf-server/pkg/middleware"
 	"atraf-server/pkg/rest"
 	"atraf-server/pkg/uid"
 	"atraf-server/pkg/validator"
+	"atraf-server/services/users"
 )
 
 type CreateRequest struct {

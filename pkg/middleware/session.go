@@ -4,10 +4,10 @@ import (
 	"context"
 	"net/http"
 
-	"atraf-server/domain/users"
 	"atraf-server/pkg/rest"
 	"atraf-server/pkg/token"
 	"atraf-server/pkg/uid"
+	"atraf-server/services/users"
 )
 
 type sessionContextKey string
@@ -44,7 +44,7 @@ func Session(u *users.Service) func(http.Handler) http.Handler {
 				return
 			}
 
-			// Users Domain
+			// TODO replace with endpoint
 			__user, err := u.UserByAccount(accountId)
 			if err != nil {
 				rest.Error(w, http.StatusUnauthorized)

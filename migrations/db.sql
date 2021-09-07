@@ -8,7 +8,6 @@ CREATE TABLE IF NOT EXISTS public.accounts
     updated_at    timestamp,
     deleted_at    timestamp
 );
-CREATE INDEX uuid ON posts (created_at DESC);
 
 DROP TABLE IF EXISTS public.users;
 CREATE TABLE IF NOT EXISTS public.users
@@ -22,7 +21,7 @@ CREATE TABLE IF NOT EXISTS public.users
     created_at      timestamp NOT NULL             default current_timestamp,
     updated_at      timestamp,
     deleted_at      timestamp
-)
+);
 
 
 DROP TABLE IF EXISTS public.posts;
@@ -35,6 +34,7 @@ CREATE TABLE IF NOT EXISTS public.posts
     updated_at timestamp,
     deleted_at timestamp
 );
+CREATE INDEX ON posts (created_at DESC);
 
 DROP TABLE IF EXISTS public.comments;
 CREATE TABLE IF NOT EXISTS public.comments
@@ -48,3 +48,4 @@ CREATE TABLE IF NOT EXISTS public.comments
     updated_at  timestamp,
     deleted_at  timestamp
 );
+CREATE INDEX ON comments (created_at DESC);

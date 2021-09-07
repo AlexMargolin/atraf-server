@@ -82,13 +82,14 @@ func prepareOne(pu PostgresUser) User {
 		FirstName:      pu.FirstName.String,
 		LastName:       pu.LastName.String,
 		ProfilePicture: pu.ProfilePicture.String,
+		CreatedAt:      pu.CreatedAt,
 	}
 }
 
-func prepareMany(pp []PostgresUser) []User {
-	var users = make([]User, 0)
+func prepareMany(pu []PostgresUser) []User {
+	var users = make([]User, len(pu))
 
-	for _, post := range pp {
+	for _, post := range pu {
 		users = append(users, prepareOne(post))
 	}
 

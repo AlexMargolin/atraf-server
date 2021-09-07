@@ -5,10 +5,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"atraf-server/domain/account"
-	"atraf-server/domain/comments"
-	"atraf-server/domain/posts"
-	"atraf-server/domain/users"
+	"atraf-server/services/account"
+	"atraf-server/services/comments"
+	"atraf-server/services/posts"
+	"atraf-server/services/users"
 
 	"atraf-server/app"
 	"atraf-server/pkg/middleware"

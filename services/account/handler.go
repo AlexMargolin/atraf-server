@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"atraf-server/domain/users"
+	"atraf-server/services/users"
+
 	"atraf-server/pkg/rest"
 	"atraf-server/pkg/token"
 	"atraf-server/pkg/uid"
