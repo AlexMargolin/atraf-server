@@ -25,6 +25,9 @@ func New(subject uid.UID) (string, error) {
 
 func Verify(unverifiedToken string) (Claims, error) {
 	token, err := jwt.ParseWithClaims(unverifiedToken, &Claims{}, signingSecret(AccessTokenSecret))
+	if err != nil {
+		return Claims{}, err
+	}
 
 	claims, ok := token.Claims.(*Claims)
 	if !ok || !token.Valid {
