@@ -14,7 +14,7 @@ import (
 
 type CreateRequest struct {
 	CommentFields         // client-updatable fields
-	PostId        uid.UID `json:"post_id" validate:"required"`
+	SourceId      uid.UID `json:"source_id" validate:"required"`
 	ParentId      uid.UID `json:"parent_id"`
 }
 
@@ -51,7 +51,7 @@ func (handler *Handler) Create() http.HandlerFunc {
 			return
 		}
 
-		commentId, err := handler.service.New(session.AccountId, request.PostId, request.ParentId, request.CommentFields)
+		commentId, err := handler.service.New(session.AccountId, request.SourceId, request.ParentId, request.CommentFields)
 		if err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
@@ -94,13 +94,13 @@ func (handler *Handler) Update() http.HandlerFunc {
 func (handler *Handler) ReadMany() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		postId, err := uid.FromString(chi.URLParam(r, "post_id"))
+		sourceId, err := uid.FromString(chi.URLParam(r, "source_id"))
 		if err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity)
 			return
 		}
 
-		comments, err := handler.service.Comments(postId)
+		comments, err := handler.service.Comments(sourceId)
 		if err != nil {
 			rest.Error(w, http.StatusNotFound)
 			return

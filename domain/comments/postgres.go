@@ -12,7 +12,7 @@ import (
 type PostgresComment struct {
 	Uuid       uid.UID      `db:"uuid"`
 	UserUuid   uid.UID      `db:"user_uuid"`
-	PostUuid   uid.UID      `db:"post_uuid"`
+	SourceUuid uid.UID      `db:"source_uuid"`
 	ParentUuid uid.UID      `db:"parent_uuid"`
 	Body       string       `db:"body"`
 	CreatedAt  time.Time    `db:"created_at"`
@@ -24,22 +24,22 @@ type Postgres struct {
 	Db *sqlx.DB
 }
 
-func (postgres *Postgres) Many(postId uid.UID) ([]Comment, error) {
+func (postgres *Postgres) Many(sourceId uid.UID) ([]Comment, error) {
 	var comments []PostgresComment
 
-	query := "SELECT  uuid, user_uuid, post_uuid, parent_uuid, body, created_at, updated_at, deleted_at FROM comments WHERE post_uuid = $1 ORDER BY created_at"
-	if err := postgres.Db.Select(&comments, query, postId); err != nil {
+	query := "SELECT  uuid, user_uuid, source_uuid, parent_uuid, body, created_at, updated_at, deleted_at FROM comments WHERE source_uuid = $1 ORDER BY created_at"
+	if err := postgres.Db.Select(&comments, query, sourceId); err != nil {
 		return nil, err
 	}
 
 	return prepareMany(comments), nil
 }
 
-func (postgres *Postgres) Insert(userId uid.UID, postId uid.UID, parentId uid.UID, fields CommentFields) (uid.UID, error) {
+func (postgres *Postgres) Insert(userId uid.UID, sourceId uid.UID, parentId uid.UID, fields CommentFields) (uid.UID, error) {
 	var uuid uid.UID
 
-	query := "INSERT INTO comments (user_uuid, post_uuid, parent_uuid, body) VALUES ($1, $2, $3, $4) RETURNING uuid"
-	if err := postgres.Db.Get(&uuid, query, userId, postId, parentId, fields.Body); err != nil {
+	query := "INSERT INTO comments (user_uuid, source_uuid, parent_uuid, body) VALUES ($1, $2, $3, $4) RETURNING uuid"
+	if err := postgres.Db.Get(&uuid, query, userId, sourceId, parentId, fields.Body); err != nil {
 		return uuid, err
 	}
 
@@ -61,7 +61,7 @@ func prepareOne(pc PostgresComment) Comment {
 	return Comment{
 		Id:        pc.Uuid,
 		UserId:    pc.UserUuid,
-		PostId:    pc.PostUuid,
+		SourceId:  pc.SourceUuid,
 		ParentId:  pc.ParentUuid,
 		Body:      pc.Body,
 		CreatedAt: pc.CreatedAt,

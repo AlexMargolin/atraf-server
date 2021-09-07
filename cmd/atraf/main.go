@@ -8,6 +8,7 @@ import (
 	"atraf-server/domain/account"
 	"atraf-server/domain/comments"
 	"atraf-server/domain/posts"
+	"atraf-server/domain/users"
 
 	"atraf-server/app"
 	"atraf-server/pkg/middleware"
@@ -29,6 +30,10 @@ func main() {
 	accountStorage := account.NewStorage(db)
 	accountService := account.NewService(accountStorage)
 	accountHandler := account.NewHandler(accountService, validate)
+
+	usersStorage := users.NewStorage(db)
+	usersService := users.NewService(usersStorage)
+	usersHandler := users.NewHandler(usersService, validate)
 
 	postsStorage := posts.NewStorage(db)
 	postsService := posts.NewService(postsStorage)
@@ -55,6 +60,10 @@ func main() {
 	router.Group(func(router chi.Router) {
 		router.Use(middleware.Session)
 
+		// Users
+		router.Post("/users", usersHandler.Create())
+		router.Get("/users/{user_id}", usersHandler.ReadOne())
+
 		// Posts
 		router.Post("/posts", postsHandler.Create())
 		router.Put("/posts/{post_id}", postsHandler.Update())
@@ -63,7 +72,7 @@ func main() {
 
 		// Comments
 		router.Post("/comments", commentsHandler.Create())
-		router.Get("/comments/{post_id}", commentsHandler.ReadMany())
+		router.Get("/comments/{source_id}", commentsHandler.ReadMany())
 		router.Put("/comments/{comment_id}", commentsHandler.Update())
 	})
 
