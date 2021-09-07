@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"atraf-server/domain/users"
 	"atraf-server/pkg/rest"
 	"atraf-server/pkg/token"
 	"atraf-server/pkg/uid"
@@ -16,7 +17,7 @@ type RegisterRequest struct {
 }
 
 type RegisterResponse struct {
-	AccountId uid.UID `json:"account_id"`
+	UserId uid.UID `json:"user_id"`
 }
 
 type LoginRequest struct {
@@ -33,7 +34,7 @@ type Handler struct {
 	validator *validator.Validator
 }
 
-func (handler *Handler) Register() http.HandlerFunc {
+func (handler *Handler) Register(us *users.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request RegisterRequest
 
@@ -53,7 +54,16 @@ func (handler *Handler) Register() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusCreated, RegisterResponse{accountId})
+		// Users Domain.
+		// If this needs to be separated, replace this with an api call and remove
+		// the service dependency from the handler
+		userId, err := us.New(accountId, users.UserFields{Email: request.Email})
+		if err != nil {
+			rest.Error(w, http.StatusInternalServerError)
+			return
+		}
+
+		rest.Success(w, http.StatusCreated, RegisterResponse{userId})
 	}
 }
 
@@ -87,6 +97,6 @@ func (handler *Handler) Login() http.HandlerFunc {
 	}
 }
 
-func NewHandler(service *Service, validator *validator.Validator) *Handler {
-	return &Handler{service, validator}
+func NewHandler(service *Service, v *validator.Validator) *Handler {
+	return &Handler{service, v}
 }

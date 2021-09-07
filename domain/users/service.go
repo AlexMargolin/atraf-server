@@ -23,7 +23,7 @@ type UserFields struct {
 
 type Storage interface {
 	One(userId uid.UID) (User, error)
-	Insert(fields UserFields) (uid.UID, error)
+	Insert(accountId uid.UID, fields UserFields) (uid.UID, error)
 }
 
 type Service struct {
@@ -34,8 +34,8 @@ func (service *Service) User(userId uid.UID) (User, error) {
 	return service.storage.One(userId)
 }
 
-func (service *Service) New(fields UserFields) (uid.UID, error) {
-	return service.storage.Insert(fields)
+func (service *Service) New(accountId uid.UID, fields UserFields) (uid.UID, error) {
+	return service.storage.Insert(accountId, fields)
 }
 
 func NewService(storage Storage) *Service {

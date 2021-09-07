@@ -51,7 +51,7 @@ func main() {
 	// Routes defined under this group do not have access to the Session Context
 	router.Group(func(router chi.Router) {
 		// Account
-		router.Post("/account/register", accountHandler.Register())
+		router.Post("/account/register", accountHandler.Register(usersService))
 		router.Post("/account/login", accountHandler.Login())
 	})
 
@@ -61,7 +61,7 @@ func main() {
 		router.Use(middleware.Session)
 
 		// Users
-		router.Post("/users", usersHandler.Create())
+		// router.Post("/users", usersHandler.Create())
 		router.Get("/users/{user_id}", usersHandler.ReadOne())
 
 		// Posts
