@@ -26,8 +26,9 @@ type ReadOneResponse struct {
 }
 
 type ReadManyResponse struct {
-	Posts []Post       `json:"posts"`
-	Users []users.User `json:"users"`
+	Cursor string       `json:"cursor"`
+	Posts  []Post       `json:"posts"`
+	Users  []users.User `json:"users"`
 }
 
 type Handler struct {
@@ -123,6 +124,16 @@ func (handler *Handler) ReadMany(u *users.Service) http.HandlerFunc {
 			return
 		}
 
+		lastPost := posts[len(posts)-1]
+		cursor, err := middleware.MakeCursor(&middleware.PaginationCursor{
+			Key:   lastPost.Id,
+			Value: lastPost.CreatedAt,
+		})
+		if err != nil {
+			rest.Error(w, http.StatusInternalServerError)
+			return
+		}
+
 		postsUserIds := UniqueUserIds(posts)
 
 		// Domain Dependency (Users)
@@ -132,7 +143,7 @@ func (handler *Handler) ReadMany(u *users.Service) http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusOK, ReadManyResponse{posts, __users})
+		rest.Success(w, http.StatusOK, ReadManyResponse{cursor, posts, __users})
 	}
 }
 

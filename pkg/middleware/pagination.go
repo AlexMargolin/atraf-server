@@ -81,6 +81,15 @@ func MarshalCursor(s string, dest interface{}) error {
 	return nil
 }
 
+func MakeCursor(p *PaginationCursor) (string, error) {
+	str, err := json.Marshal(p)
+	if err != nil {
+		return "", err
+	}
+
+	return base64.URLEncoding.EncodeToString(str), nil
+}
+
 func GetPaginationContext(request *http.Request) *PaginationContext {
 	return request.Context().Value(PaginationContextKey).(*PaginationContext)
 }

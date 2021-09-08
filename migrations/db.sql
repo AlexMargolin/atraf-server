@@ -27,15 +27,16 @@ CREATE TABLE IF NOT EXISTS public.users
 DROP TABLE IF EXISTS public.posts;
 CREATE TABLE IF NOT EXISTS public.posts
 (
-    uuid       uuid UNIQUE NOT NULL default gen_random_uuid(),
-    user_uuid  uuid        NOT NULL,
-    title      text        NOT NULL,
-    body       text        NOT NULL,
-    created_at timestamp   NOT NULL default current_timestamp,
+    uuid       uuid PRIMARY KEY NOT NULL default gen_random_uuid(),
+    user_uuid  uuid             NOT NULL,
+    title      text             NOT NULL,
+    body       text             NOT NULL,
+    created_at timestamp        NOT NULL default current_timestamp,
     updated_at timestamp,
     deleted_at timestamp
 );
-CREATE INDEX ON posts (uuid, created_at);
+DROP INDEX IF EXISTS posts_created_at_uuid_idx;
+CREATE INDEX posts_created_at_uuid_idx ON posts (created_at, uuid);
 
 DROP TABLE IF EXISTS public.comments;
 CREATE TABLE IF NOT EXISTS public.comments
@@ -49,4 +50,5 @@ CREATE TABLE IF NOT EXISTS public.comments
     updated_at  timestamp,
     deleted_at  timestamp
 );
-CREATE INDEX ON comments (created_at DESC);
+DROP INDEX IF EXISTS posts_created_at_idx;
+CREATE INDEX posts_created_at_idx ON comments (created_at DESC);
