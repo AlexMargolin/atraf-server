@@ -114,7 +114,7 @@ func (handler *Handler) ReadMany(u *users.Service) http.HandlerFunc {
 
 		commentsUserIds := UniqueUserIds(comments)
 
-		// Domain Dependency (Users)
+		// DOMAIN Dependency (Users)
 		__users, err := u.UsersByIds(commentsUserIds)
 		if err != nil {
 			rest.Error(w, http.StatusInternalServerError)

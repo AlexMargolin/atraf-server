@@ -22,14 +22,14 @@ const (
 	MaxLimit     = 100
 )
 
-type PaginationCursor struct {
+type Cursor struct {
 	Key   uid.UID   `json:"key"`
 	Value time.Time `json:"value"`
 }
 
 type PaginationContext struct {
 	Limit  int
-	Cursor PaginationCursor
+	Cursor Cursor
 }
 
 type paginationContextKey string
@@ -81,7 +81,7 @@ func MarshalCursor(s string, dest interface{}) error {
 	return nil
 }
 
-func MakeCursor(p *PaginationCursor) (string, error) {
+func EncodeCursor(p *Cursor) (string, error) {
 	str, err := json.Marshal(p)
 	if err != nil {
 		return "", err

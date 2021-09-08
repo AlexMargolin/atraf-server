@@ -125,7 +125,7 @@ func (handler *Handler) ReadMany(u *users.Service) http.HandlerFunc {
 		}
 
 		lastPost := posts[len(posts)-1]
-		cursor, err := middleware.MakeCursor(&middleware.PaginationCursor{
+		cursor, err := middleware.EncodeCursor(&middleware.Cursor{
 			Key:   lastPost.Id,
 			Value: lastPost.CreatedAt,
 		})
@@ -136,7 +136,7 @@ func (handler *Handler) ReadMany(u *users.Service) http.HandlerFunc {
 
 		postsUserIds := UniqueUserIds(posts)
 
-		// Domain Dependency (Users)
+		// DOMAIN Dependency (Users)
 		__users, err := u.UsersByIds(postsUserIds)
 		if err != nil {
 			rest.Error(w, http.StatusInternalServerError)
