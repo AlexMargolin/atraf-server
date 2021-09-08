@@ -2,6 +2,8 @@ package account
 
 import (
 	"database/sql"
+	"errors"
+	"log"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -65,6 +67,39 @@ func (postgres *Postgres) SetReset(accountId uid.UID) (uid.UID, error) {
 	}
 
 	return uuid, nil
+}
+
+func (postgres *Postgres) UpdatePassword(tokenId uid.UID, passwordHash []byte) error {
+	tx := postgres.Db.MustBegin()
+
+	updateQuery := `
+	UPDATE accounts
+	SET password_hash = $1
+	FROM accounts_reset
+	WHERE accounts.uuid = accounts_reset.account_uuid
+	AND accounts_reset.token_uuid = $2`
+
+	deleteQuery := `
+	DELETE FROM accounts_reset
+	WHERE token_uuid = $1`
+
+	result := tx.MustExec(updateQuery, passwordHash, tokenId)
+	tx.MustExec(deleteQuery, tokenId)
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		if err := tx.Rollback(); err != nil {
+			return err
+		}
+		return errors.New("account reset record could not be found")
+	}
+
+	if err := tx.Commit(); err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return nil
 }
 
 func prepareOne(pa PostgresAccount) Account {

@@ -54,6 +54,7 @@ func main() {
 		router.Post("/account/register", accountHandler.Register(usersService))
 		router.Post("/account/login", accountHandler.Login())
 		router.Post("/account/forgot", accountHandler.Forgot())
+		router.Post("/account/reset", accountHandler.Reset())
 	})
 
 	// Authenticated Routes (Private)

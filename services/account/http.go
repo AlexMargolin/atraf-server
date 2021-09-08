@@ -33,6 +33,11 @@ type ForgotRequest struct {
 	Email string `json:"email" validate:"required,email"`
 }
 
+type ResetRequest struct {
+	Token       string `json:"token" validate:"required"`
+	NewPassword string `json:"new_password" validate:"required"`
+}
+
 type Handler struct {
 	service   *Service
 	validator *validator.Validator
@@ -113,6 +118,29 @@ func (handler *Handler) Forgot() http.HandlerFunc {
 
 		if err := handler.service.Forgot(request.Email); err != nil {
 			rest.Success(w, http.StatusNoContent)
+			return
+		}
+
+		rest.Success(w, http.StatusNoContent)
+	}
+}
+
+func (handler *Handler) Reset() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var request ResetRequest
+
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			rest.Error(w, http.StatusBadRequest)
+			return
+		}
+
+		if err := handler.validator.Struct(request); err != nil {
+			rest.Error(w, http.StatusUnprocessableEntity)
+			return
+		}
+
+		if err := handler.service.Reset(request.Token, request.NewPassword); err != nil {
+			rest.Error(w, http.StatusBadRequest)
 			return
 		}
 

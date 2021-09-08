@@ -32,6 +32,8 @@
 30. create jwt aud for password reset
 31. move login access token into service
 32. add updated at trigger
+33. foreign keys (account + account_reset)
+34. cron job to delete requested password resets
 
 # Features
 

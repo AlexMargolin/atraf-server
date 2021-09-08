@@ -24,6 +24,7 @@ type Storage interface {
 	ByEmail(email string) (Account, error)
 	Insert(email string, passwordHash []byte) (uid.UID, error)
 	SetReset(accountId uid.UID) (uid.UID, error)
+	UpdatePassword(tokenId uid.UID, passwordHash []byte) error
 }
 
 type Service struct {
@@ -83,6 +84,31 @@ func (service *Service) Forgot(email string) error {
 	resetLink := service.resetLink(resetToken)
 	log.Println(resetLink) // todo email the link
 
+	return nil
+}
+
+func (service *Service) Reset(unverifiedToken string, password string) error {
+	passwordHash, err := service.newPasswordHash(password)
+	if err != nil {
+		return err
+	}
+
+	claims, err := token.Verify(os.Getenv("RESET_TOKEN_SECRET"), unverifiedToken)
+	if err != nil {
+		return err
+	}
+
+	tokenId, err := uid.FromString(claims.Subject)
+	if err != nil {
+		return err
+	}
+
+	if err = service.storage.UpdatePassword(tokenId, passwordHash); err != nil {
+		return err
+	}
+
+	// todo send password changed notification email
+	log.Println("password changed")
 	return nil
 }
 
