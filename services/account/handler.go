@@ -56,7 +56,7 @@ func (handler *Handler) Register(u *users.Service) http.HandlerFunc {
 			return
 		}
 
-		// TODO replace with endpoint
+		// Domain Dependency (Users)
 		__userId, err := u.NewUser(accountId, users.UserFields{Email: request.Email})
 		if err != nil {
 			rest.Error(w, http.StatusInternalServerError)

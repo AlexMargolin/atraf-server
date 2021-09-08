@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS public.posts
 (
     uuid       uuid UNIQUE NOT NULL default gen_random_uuid(),
     user_uuid  uuid        NOT NULL,
+    title      text        NOT NULL,
     body       text        NOT NULL,
     created_at timestamp   NOT NULL default current_timestamp,
     updated_at timestamp,

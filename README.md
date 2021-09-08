@@ -26,6 +26,7 @@
 24. create updated at trigger
 25. create indexes on created_at
 26. change {Domain}Fields to Data
+27. todo remove mail from public users
 
 # Features
 

@@ -44,7 +44,7 @@ func Session(u *users.Service) func(http.Handler) http.Handler {
 				return
 			}
 
-			// TODO replace with endpoint
+			// Domain Dependency (Users)
 			__user, err := u.UserByAccount(accountId)
 			if err != nil {
 				rest.Error(w, http.StatusUnauthorized)

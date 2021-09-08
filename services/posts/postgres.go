@@ -13,6 +13,7 @@ import (
 type PostgresPost struct {
 	Uuid      uid.UID      `db:"uuid"`
 	UserUuid  uid.UID      `db:"user_uuid"`
+	Title     string       `db:"title"`
 	Body      string       `db:"body"`
 	CreatedAt time.Time    `db:"created_at"`
 	UpdatedAt sql.NullTime `db:"updated_at"`
@@ -26,7 +27,7 @@ type Postgres struct {
 func (postgres Postgres) One(postId uid.UID) (Post, error) {
 	var post PostgresPost
 
-	query := "SELECT uuid, user_uuid, body, created_at, updated_at, deleted_at FROM posts WHERE uuid = $1 LIMIT 1"
+	query := "SELECT uuid, user_uuid, title, body, created_at, updated_at, deleted_at FROM posts WHERE uuid = $1 LIMIT 1"
 	if err := postgres.Db.Get(&post, query, postId); err != nil {
 		return Post{}, err
 	}
@@ -38,12 +39,12 @@ func (postgres Postgres) Many(p *middleware.PaginationContext) ([]Post, error) {
 	var posts []PostgresPost
 
 	if p.Cursor.Key != uid.Nil {
-		query := "SELECT uuid, user_uuid, body, created_at, updated_at, deleted_at FROM posts WHERE uuid < $1 AND created_at < $2 ORDER BY created_at DESC LIMIT $3"
+		query := "SELECT uuid, user_uuid, title, body, created_at, updated_at, deleted_at FROM posts WHERE uuid < $1 AND created_at < $2 ORDER BY created_at DESC LIMIT $3"
 		if err := postgres.Db.Select(&posts, query, p.Cursor.Key, p.Cursor.Value, p.Limit); err != nil {
 			return nil, err
 		}
 	} else {
-		query := "SELECT uuid, user_uuid, body, created_at, updated_at, deleted_at FROM posts ORDER BY created_at DESC LIMIT $1"
+		query := "SELECT uuid, user_uuid, title, body, created_at, updated_at, deleted_at FROM posts ORDER BY created_at DESC LIMIT $1"
 		if err := postgres.Db.Select(&posts, query, p.Limit); err != nil {
 			return nil, err
 		}
@@ -55,8 +56,8 @@ func (postgres Postgres) Many(p *middleware.PaginationContext) ([]Post, error) {
 func (postgres Postgres) Insert(userId uid.UID, fields PostFields) (uid.UID, error) {
 	var uuid uid.UID
 
-	query := "INSERT INTO posts (user_uuid, body) VALUES ($1, $2) RETURNING uuid"
-	if err := postgres.Db.Get(&uuid, query, userId, fields.Body); err != nil {
+	query := "INSERT INTO posts (user_uuid, title, body) VALUES ($1, $2, $3) RETURNING uuid"
+	if err := postgres.Db.Get(&uuid, query, userId, fields.Title, fields.Body); err != nil {
 		return uuid, err
 	}
 
@@ -66,8 +67,8 @@ func (postgres Postgres) Insert(userId uid.UID, fields PostFields) (uid.UID, err
 func (postgres Postgres) Update(postId uid.UID, fields PostFields) (uid.UID, error) {
 	var uuid uid.UID
 
-	query := "UPDATE posts SET body = $2 WHERE uuid = $1 RETURNING uuid"
-	if err := postgres.Db.Get(&uuid, query, postId, fields.Body); err != nil {
+	query := "UPDATE posts SET title = $2, body = $3 WHERE uuid = $1 RETURNING uuid"
+	if err := postgres.Db.Get(&uuid, query, postId, fields.Title, fields.Body); err != nil {
 		return uuid, err
 	}
 
@@ -78,6 +79,7 @@ func prepareOne(pp PostgresPost) Post {
 	return Post{
 		Id:        pp.Uuid,
 		UserId:    pp.UserUuid,
+		Title:     pp.Title,
 		Body:      pp.Body,
 		CreatedAt: pp.CreatedAt,
 		UpdatedAt: pp.UpdatedAt.Time,
