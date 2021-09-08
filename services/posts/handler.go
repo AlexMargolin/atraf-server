@@ -10,6 +10,7 @@ import (
 	"atraf-server/pkg/rest"
 	"atraf-server/pkg/uid"
 	"atraf-server/pkg/validator"
+	"atraf-server/services/users"
 )
 
 type CreateResponse struct {
@@ -25,7 +26,8 @@ type ReadOneResponse struct {
 }
 
 type ReadManyResponse struct {
-	Posts []Post `json:"posts"`
+	Posts []Post       `json:"posts"`
+	Users []users.User `json:"users"`
 }
 
 type Handler struct {
@@ -106,7 +108,7 @@ func (handler *Handler) ReadOne() http.HandlerFunc {
 	}
 }
 
-func (handler *Handler) ReadMany() http.HandlerFunc {
+func (handler *Handler) ReadMany(u *users.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		pagination := middleware.GetPaginationContext(r)
 
@@ -116,7 +118,21 @@ func (handler *Handler) ReadMany() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusOK, ReadManyResponse{posts})
+		if len(posts) == 0 {
+			rest.Success(w, http.StatusOK, ReadManyResponse{})
+			return
+		}
+
+		postsUserIds := UniqueUserIds(posts)
+
+		// Domain Dependency (Users)
+		__users, err := u.UsersByIds(postsUserIds)
+		if err != nil {
+			rest.Error(w, http.StatusInternalServerError)
+			return
+		}
+
+		rest.Success(w, http.StatusOK, ReadManyResponse{posts, __users})
 	}
 }
 

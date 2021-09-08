@@ -50,6 +50,21 @@ func (service *Service) UpdatePost(postId uid.UID, fields PostFields) (uid.UID, 
 	return service.storage.Update(postId, fields)
 }
 
+func UniqueUserIds(posts []Post) []uid.UID {
+	userIds := make([]uid.UID, 0)
+	m := make(map[uid.UID]bool, 0)
+
+	for _, post := range posts {
+		if m[post.UserId] {
+			continue
+		}
+		m[post.UserId] = true
+		userIds = append(userIds, post.UserId)
+	}
+
+	return userIds
+}
+
 func NewService(storage Storage) *Service {
 	return &Service{storage}
 }
