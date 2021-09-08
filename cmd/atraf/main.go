@@ -66,7 +66,7 @@ func main() {
 		// Posts
 		router.Post("/posts", postsHandler.Create())
 		router.Put("/posts/{post_id}", postsHandler.Update())
-		router.Get("/posts/{post_id}", postsHandler.ReadOne())
+		router.Get("/posts/{post_id}", postsHandler.ReadOne(usersService))
 		router.With(middleware.Pagination).Get("/posts", postsHandler.ReadMany(usersService))
 
 		// Comments

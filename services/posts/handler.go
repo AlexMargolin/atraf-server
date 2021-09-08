@@ -22,7 +22,8 @@ type UpdateResponse struct {
 }
 
 type ReadOneResponse struct {
-	Post Post `json:"post"`
+	Post Post       `json:"post"`
+	User users.User `json:"user"`
 }
 
 type ReadManyResponse struct {
@@ -91,7 +92,7 @@ func (handler *Handler) Update() http.HandlerFunc {
 	}
 }
 
-func (handler *Handler) ReadOne() http.HandlerFunc {
+func (handler *Handler) ReadOne(u *users.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		postId, err := uid.FromString(chi.URLParam(r, "post_id"))
 		if err != nil {
@@ -105,7 +106,14 @@ func (handler *Handler) ReadOne() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusOK, ReadOneResponse{post})
+		// DOMAIN Dependency (Users)
+		__user, err := u.UserById(post.UserId)
+		if err != nil {
+			rest.Error(w, http.StatusInternalServerError)
+			return
+		}
+
+		rest.Success(w, http.StatusOK, ReadOneResponse{post, __user})
 	}
 }
 

@@ -1,3 +1,4 @@
+/*ACCOUNTS*/
 DROP TABLE IF EXISTS public.accounts;
 CREATE TABLE IF NOT EXISTS public.accounts
 (
@@ -9,6 +10,7 @@ CREATE TABLE IF NOT EXISTS public.accounts
     deleted_at    timestamp
 );
 
+/*USERS*/
 DROP TABLE IF EXISTS public.users;
 CREATE TABLE IF NOT EXISTS public.users
 (
@@ -23,7 +25,7 @@ CREATE TABLE IF NOT EXISTS public.users
     deleted_at      timestamp
 );
 
-
+/*POSTS*/
 DROP TABLE IF EXISTS public.posts;
 CREATE TABLE IF NOT EXISTS public.posts
 (
@@ -38,6 +40,7 @@ CREATE TABLE IF NOT EXISTS public.posts
 DROP INDEX IF EXISTS posts_created_at_uuid_idx;
 CREATE INDEX posts_created_at_uuid_idx ON posts (created_at, uuid);
 
+/*COMMENTS*/
 DROP TABLE IF EXISTS public.comments;
 CREATE TABLE IF NOT EXISTS public.comments
 (
