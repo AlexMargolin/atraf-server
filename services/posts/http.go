@@ -96,7 +96,7 @@ func (handler *Handler) ReadOne(u *users.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		postId, err := uid.FromString(chi.URLParam(r, "post_id"))
 		if err != nil {
-			rest.Error(w, http.StatusUnprocessableEntity)
+			rest.Error(w, http.StatusNotFound)
 			return
 		}
 
