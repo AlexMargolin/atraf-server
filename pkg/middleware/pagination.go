@@ -2,8 +2,11 @@ package middleware
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"atraf-server/pkg/rest"
 	"atraf-server/pkg/uid"
@@ -19,9 +22,14 @@ const (
 	MaxLimit     = 100
 )
 
+type PaginationCursor struct {
+	Key   uid.UID   `json:"key"`
+	Value time.Time `json:"value"`
+}
+
 type PaginationContext struct {
 	Limit  int
-	Cursor uid.UID
+	Cursor PaginationCursor
 }
 
 type paginationContextKey string
@@ -44,8 +52,9 @@ func Pagination(next http.Handler) http.Handler {
 		}
 
 		if cursor != "" {
-			if cursor, err := uid.FromString(cursor); err == nil {
-				pagination.Cursor = cursor
+			if err := MarshalCursor(cursor, &pagination.Cursor); err != nil {
+				rest.Error(w, http.StatusUnprocessableEntity)
+				return
 			}
 		}
 
@@ -57,6 +66,19 @@ func Pagination(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), PaginationContextKey, &pagination)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+func MarshalCursor(s string, dest interface{}) error {
+	data, err := base64.URLEncoding.DecodeString(s)
+	if err != nil {
+		return err
+	}
+
+	if err = json.Unmarshal(data, &dest); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func GetPaginationContext(request *http.Request) *PaginationContext {

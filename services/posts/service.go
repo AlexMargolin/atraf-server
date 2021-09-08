@@ -3,6 +3,7 @@ package posts
 import (
 	"time"
 
+	"atraf-server/pkg/middleware"
 	"atraf-server/pkg/uid"
 )
 
@@ -22,7 +23,7 @@ type PostFields struct {
 
 type Storage interface {
 	One(postId uid.UID) (Post, error)
-	Many(limit int, cursor uid.UID) ([]Post, error)
+	Many(pagination *middleware.PaginationContext) ([]Post, error)
 	Update(postId uid.UID, fields PostFields) (uid.UID, error)
 	Insert(userId uid.UID, fields PostFields) (uid.UID, error)
 }
@@ -35,8 +36,8 @@ func (service *Service) PostById(postId uid.UID) (Post, error) {
 	return service.storage.One(postId)
 }
 
-func (service *Service) ListPosts(limit int, cursor uid.UID) ([]Post, error) {
-	return service.storage.Many(limit, cursor)
+func (service *Service) ListPosts(pagination *middleware.PaginationContext) ([]Post, error) {
+	return service.storage.Many(pagination)
 }
 
 func (service *Service) NewPost(userId uid.UID, fields PostFields) (uid.UID, error) {

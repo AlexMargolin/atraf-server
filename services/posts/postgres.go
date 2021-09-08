@@ -6,6 +6,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 
+	"atraf-server/pkg/middleware"
 	"atraf-server/pkg/uid"
 )
 
@@ -33,12 +34,19 @@ func (postgres Postgres) One(postId uid.UID) (Post, error) {
 	return prepareOne(post), nil
 }
 
-func (postgres Postgres) Many(limit int, cursor uid.UID) ([]Post, error) {
+func (postgres Postgres) Many(p *middleware.PaginationContext) ([]Post, error) {
 	var posts []PostgresPost
 
-	query := "SELECT uuid, user_uuid, body, created_at, updated_at, deleted_at FROM posts WHERE uuid > $1 ORDER BY created_at DESC LIMIT $2"
-	if err := postgres.Db.Select(&posts, query, cursor, limit); err != nil {
-		return nil, err
+	if p.Cursor.Key != uid.Nil {
+		query := "SELECT uuid, user_uuid, body, created_at, updated_at, deleted_at FROM posts WHERE uuid < $1 AND created_at < $2 ORDER BY created_at DESC LIMIT $3"
+		if err := postgres.Db.Select(&posts, query, p.Cursor.Key, p.Cursor.Value, p.Limit); err != nil {
+			return nil, err
+		}
+	} else {
+		query := "SELECT uuid, user_uuid, body, created_at, updated_at, deleted_at FROM posts ORDER BY created_at DESC LIMIT $1"
+		if err := postgres.Db.Select(&posts, query, p.Limit); err != nil {
+			return nil, err
+		}
 	}
 
 	return prepareMany(posts), nil

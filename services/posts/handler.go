@@ -25,8 +25,7 @@ type ReadOneResponse struct {
 }
 
 type ReadManyResponse struct {
-	NextCursor string `json:"next_cursor"`
-	Posts      []Post `json:"posts"`
+	Posts []Post `json:"posts"`
 }
 
 type Handler struct {
@@ -109,23 +108,15 @@ func (handler *Handler) ReadOne() http.HandlerFunc {
 
 func (handler *Handler) ReadMany() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var nextCursor string
 		pagination := middleware.GetPaginationContext(r)
 
-		// we want to get the next post as well to determine whether there is a next page.
-		limit := pagination.Limit + 1
-
-		posts, err := handler.service.ListPosts(limit, pagination.Cursor)
+		posts, err := handler.service.ListPosts(pagination)
 		if err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
 		}
 
-		if len(posts) == limit {
-			nextCursor = posts[len(posts)-2].Id.String()
-		}
-
-		rest.Success(w, http.StatusOK, ReadManyResponse{nextCursor, posts})
+		rest.Success(w, http.StatusOK, ReadManyResponse{posts})
 	}
 }
 
