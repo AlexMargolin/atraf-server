@@ -28,6 +28,10 @@
 26. change {Domain}Fields to Data
 27. todo remove mail from public users
 28. mess test pagination base64 json
+29. invoke jwt
+30. create jwt aud for password reset
+31. move login access token into service
+32. add updated at trigger
 
 # Features
 

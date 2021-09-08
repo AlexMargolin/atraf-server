@@ -7,7 +7,6 @@ import (
 	"atraf-server/services/users"
 
 	"atraf-server/pkg/rest"
-	"atraf-server/pkg/token"
 	"atraf-server/pkg/uid"
 	"atraf-server/pkg/validator"
 )
@@ -28,6 +27,10 @@ type LoginRequest struct {
 
 type LoginResponse struct {
 	AccessToken string `json:"access_token"`
+}
+
+type ForgotRequest struct {
+	Email string `json:"email" validate:"required,email"`
 }
 
 type Handler struct {
@@ -81,19 +84,39 @@ func (handler *Handler) Login() http.HandlerFunc {
 			return
 		}
 
-		account, err := handler.service.Login(request.Email, request.Password)
+		token, err := handler.service.Login(request.Email, request.Password)
 		if err != nil {
 			rest.Error(w, http.StatusUnauthorized)
 			return
 		}
 
-		accessToken, err := token.New(account.Id)
-		if err != nil {
-			rest.Error(w, http.StatusInternalServerError)
+		rest.Success(w, http.StatusOK, LoginResponse{token})
+	}
+}
+
+// Forgot attempts to locate an account using the request email.
+// once located, a password reset email is sent containing a signed JWT with the account id.
+// returns the same status code regardless of whether the account exists or not.
+func (handler *Handler) Forgot() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var request ForgotRequest
+
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			rest.Error(w, http.StatusBadRequest)
 			return
 		}
 
-		rest.Success(w, http.StatusOK, LoginResponse{accessToken})
+		if err := handler.validator.Struct(request); err != nil {
+			rest.Error(w, http.StatusUnprocessableEntity)
+			return
+		}
+
+		if err := handler.service.Forgot(request.Email); err != nil {
+			rest.Success(w, http.StatusNoContent)
+			return
+		}
+
+		rest.Success(w, http.StatusNoContent)
 	}
 }
 

@@ -3,31 +3,26 @@ package token
 import (
 	"errors"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt"
-
-	"atraf-server/pkg/uid"
 )
-
-var AccessTokenSecret = os.Getenv("ACCESS_TOKEN_SECRET")
 
 type Claims = jwt.StandardClaims
 
-func New(subject uid.UID) (string, error) {
+func New(secret string, subject string) (string, error) {
 	unsignedToken := jwt.NewWithClaims(jwt.SigningMethodHS512, Claims{
-		Subject:   uid.ToString(subject),
+		Subject:   subject,
 		IssuedAt:  time.Now().Unix(),
 		ExpiresAt: time.Now().Add(time.Minute * 15).Unix(),
 	})
 
-	return unsignedToken.SignedString([]byte(AccessTokenSecret))
+	return unsignedToken.SignedString([]byte(secret))
 }
 
-func Verify(unverifiedToken string) (Claims, error) {
-	token, err := jwt.ParseWithClaims(unverifiedToken, &Claims{}, signingSecret(AccessTokenSecret))
+func Verify(secret string, unverifiedToken string) (Claims, error) {
+	token, err := jwt.ParseWithClaims(unverifiedToken, &Claims{}, signingSecret(secret))
 	if err != nil {
 		return Claims{}, err
 	}

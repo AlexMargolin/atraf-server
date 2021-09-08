@@ -1,24 +1,29 @@
 package account
 
 import (
+	"fmt"
+	"log"
+	"os"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 
+	"atraf-server/pkg/token"
 	"atraf-server/pkg/uid"
 )
 
 type Account struct {
-	Id           uid.UID   `json:"id"`
-	Email        string    `json:"email"`
+	Id           uid.UID   `json:"-"`
+	Email        string    `json:"-"`
 	PasswordHash []byte    `json:"-"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	CreatedAt    time.Time `json:"-"`
+	UpdatedAt    time.Time `json:"-"`
 }
 
 type Storage interface {
 	ByEmail(email string) (Account, error)
 	Insert(email string, passwordHash []byte) (uid.UID, error)
+	SetReset(accountId uid.UID) (uid.UID, error)
 }
 
 type Service struct {
@@ -41,19 +46,44 @@ func (service *Service) Register(email string, password string) (uid.UID, error)
 	return accountId, nil
 }
 
-func (service *Service) Login(email string, password string) (Account, error) {
-	var account Account
-
+func (service *Service) Login(email string, password string) (string, error) {
 	account, err := service.storage.ByEmail(email)
 	if err != nil {
-		return account, err
+		return "", err
 	}
 
 	if err = service.comparePasswordHash(password, account.PasswordHash); err != nil {
-		return account, err
+		return "", err
 	}
 
-	return account, nil
+	accessToken, err := token.New(os.Getenv("ACCESS_TOKEN_SECRET"), account.Id.String())
+	if err != nil {
+		return "", err
+	}
+
+	return accessToken, nil
+}
+
+func (service *Service) Forgot(email string) error {
+	account, err := service.storage.ByEmail(email)
+	if err != nil {
+		return err
+	}
+
+	tokenId, err := service.storage.SetReset(account.Id)
+	if err != nil {
+		return err
+	}
+
+	resetToken, err := token.New(os.Getenv("RESET_TOKEN_SECRET"), tokenId.String())
+	if err != nil {
+		return err
+	}
+
+	resetLink := service.resetLink(resetToken)
+	log.Println(resetLink) // todo email the link
+
+	return nil
 }
 
 func (Service) newPasswordHash(password string) ([]byte, error) {
@@ -62,6 +92,10 @@ func (Service) newPasswordHash(password string) ([]byte, error) {
 
 func (Service) comparePasswordHash(password string, passwordHash []byte) error {
 	return bcrypt.CompareHashAndPassword(passwordHash, []byte(password))
+}
+
+func (Service) resetLink(resetToken string) string {
+	return fmt.Sprintf("%s/reset/%s", os.Getenv("CLIENT_URL"), resetToken)
 }
 
 func NewService(storage Storage) *Service {

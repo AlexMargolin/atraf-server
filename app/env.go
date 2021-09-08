@@ -8,6 +8,7 @@ import (
 )
 
 var RequiredKeys = []string{
+	"CLIENT_URL",
 	"DB_HOST",
 	"DB_PORT",
 	"DB_USER",
@@ -16,6 +17,7 @@ var RequiredKeys = []string{
 	"SERVER_PORT",
 	"SERVER_HOST",
 	"ACCESS_TOKEN_SECRET",
+	"RESET_TOKEN_SECRET",
 }
 
 func CheckEnvironment() error {

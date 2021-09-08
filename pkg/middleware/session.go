@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"net/http"
+	"os"
 
 	"atraf-server/pkg/rest"
 	"atraf-server/pkg/token"
@@ -32,7 +33,8 @@ func Session(u *users.Service) func(http.Handler) http.Handler {
 				return
 			}
 
-			claims, err := token.Verify(unverifiedToken)
+			secret := os.Getenv("ACCESS_TOKEN_SECRET")
+			claims, err := token.Verify(secret, unverifiedToken)
 			if err != nil {
 				rest.Error(w, http.StatusUnauthorized)
 				return
