@@ -52,7 +52,7 @@ func Pagination(next http.Handler) http.Handler {
 		}
 
 		if cursor != "" {
-			if err := MarshalCursor(cursor, &pagination.Cursor); err != nil {
+			if err := DecodeCursor(cursor, &pagination.Cursor); err != nil {
 				rest.Error(w, http.StatusUnprocessableEntity)
 				return
 			}
@@ -68,7 +68,7 @@ func Pagination(next http.Handler) http.Handler {
 	})
 }
 
-func MarshalCursor(s string, dest interface{}) error {
+func DecodeCursor(s string, dest interface{}) error {
 	data, err := base64.URLEncoding.DecodeString(s)
 	if err != nil {
 		return err
