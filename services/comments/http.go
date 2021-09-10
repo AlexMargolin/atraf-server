@@ -9,23 +9,21 @@ import (
 	"atraf-server/pkg/middleware"
 	"atraf-server/pkg/rest"
 	"atraf-server/pkg/uid"
-	"atraf-server/pkg/validator"
+	"atraf-server/pkg/validate"
 	"atraf-server/services/users"
 )
 
 type CreateRequest struct {
-	CommentFields         // client-updatable fields
-	SourceId      uid.UID `json:"source_id" validate:"required"`
-	ParentId      uid.UID `json:"parent_id"`
+	CommentFields
+	SourceId uid.UID `json:"source_id" validate:"required"`
+	ParentId uid.UID `json:"parent_id"`
 }
 
 type CreateResponse struct {
 	CommentId uid.UID `json:"comment_id"`
 }
 
-type UpdateResponse struct {
-	CommentId uid.UID `json:"comment_id"`
-}
+type UpdateRequest = CommentFields
 
 type ReadManyResponse struct {
 	Comments []Comment    `json:"comments"`
@@ -33,8 +31,8 @@ type ReadManyResponse struct {
 }
 
 type Handler struct {
-	service   *Service
-	validator *validator.Validator
+	service  *Service
+	validate *validate.Validate
 }
 
 func (handler *Handler) Create() http.HandlerFunc {
@@ -43,11 +41,11 @@ func (handler *Handler) Create() http.HandlerFunc {
 		session := middleware.GetSessionContext(r)
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			rest.Error(w, http.StatusBadRequest)
+			rest.Error(w, http.StatusUnsupportedMediaType)
 			return
 		}
 
-		if err := handler.validator.Struct(request); err != nil {
+		if err := handler.validate.Struct(request); err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity)
 			return
 		}
@@ -58,13 +56,15 @@ func (handler *Handler) Create() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusCreated, CreateResponse{commentId})
+		rest.Success(w, http.StatusCreated, &CreateResponse{
+			commentId,
+		})
 	}
 }
 
 func (handler *Handler) Update() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var fields CommentFields
+		var request UpdateRequest
 
 		commentId, err := uid.FromString(chi.URLParam(r, "comment_id"))
 		if err != nil {
@@ -72,27 +72,25 @@ func (handler *Handler) Update() http.HandlerFunc {
 			return
 		}
 
-		if err := json.NewDecoder(r.Body).Decode(&fields); err != nil {
-			rest.Error(w, http.StatusBadRequest)
+		if err = json.NewDecoder(r.Body).Decode(&request); err != nil {
+			rest.Error(w, http.StatusUnsupportedMediaType)
 			return
 		}
 
-		if err := handler.validator.Struct(fields); err != nil {
+		if err = handler.validate.Struct(request); err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity)
 			return
 		}
 
-		commentId, err = handler.service.UpdateComment(commentId, fields)
-		if err != nil {
+		if err = handler.service.UpdateComment(commentId, request); err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
 		}
 
-		rest.Success(w, http.StatusOK, UpdateResponse{commentId})
+		rest.Success(w, http.StatusNoContent, nil)
 	}
 }
 
-// ReadMany Depends on: Users
 func (handler *Handler) ReadMany(u *users.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		sourceId, err := uid.FromString(chi.URLParam(r, "source_id"))
@@ -103,28 +101,31 @@ func (handler *Handler) ReadMany(u *users.Service) http.HandlerFunc {
 
 		comments, err := handler.service.CommentsBySourceId(sourceId)
 		if err != nil {
-			rest.Error(w, http.StatusNotFound)
+			rest.Error(w, http.StatusInternalServerError)
 			return
 		}
 
 		if len(comments) == 0 {
-			rest.Success(w, http.StatusOK, ReadManyResponse{})
+			rest.Error(w, http.StatusNotFound)
 			return
 		}
 
-		commentsUserIds := UniqueUserIds(comments)
+		userIds := UniqueUserIds(comments)
 
-		// DOMAIN Dependency (Users)
-		__users, err := u.UsersByIds(commentsUserIds)
+		// Dependency(Users)
+		__users, err := u.UsersByIds(userIds)
 		if err != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
 		}
 
-		rest.Success(w, http.StatusOK, ReadManyResponse{comments, __users})
+		rest.Success(w, http.StatusOK, &ReadManyResponse{
+			comments,
+			__users,
+		})
 	}
 }
 
-func NewHandler(service *Service, validator *validator.Validator) *Handler {
-	return &Handler{service, validator}
+func NewHandler(s *Service, v *validate.Validate) *Handler {
+	return &Handler{s, v}
 }

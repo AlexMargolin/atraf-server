@@ -7,24 +7,25 @@ import (
 	"strings"
 )
 
-var RequiredKeys = []string{
-	"CLIENT_URL",
-	"DB_HOST",
-	"DB_PORT",
-	"DB_USER",
-	"DB_PASS",
-	"DB_NAME",
-	"SERVER_PORT",
-	"SERVER_HOST",
-	"ACCESS_TOKEN_SECRET",
-	"RESET_TOKEN_SECRET",
-}
-
+// CheckEnvironment ensures the required environment variables are defined and not empty.
 func CheckEnvironment() error {
 	missing := make([]string, 0)
 
+	var RequiredKeys = []string{
+		"CLIENT_URL",
+		"DB_HOST",
+		"DB_PORT",
+		"DB_USER",
+		"DB_PASS",
+		"DB_NAME",
+		"SERVER_PORT",
+		"SERVER_HOST",
+		"ACCESS_TOKEN_SECRET",
+		"RESET_TOKEN_SECRET",
+	}
+
 	for _, key := range RequiredKeys {
-		if _, exists := os.LookupEnv(key); !exists {
+		if value := os.Getenv(key); value == "" {
 			missing = append(missing, key)
 		}
 	}

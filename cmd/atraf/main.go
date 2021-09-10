@@ -12,7 +12,7 @@ import (
 
 	"atraf-server/app"
 	"atraf-server/pkg/middleware"
-	"atraf-server/pkg/validator"
+	"atraf-server/pkg/validate"
 )
 
 func main() {
@@ -25,23 +25,23 @@ func main() {
 		log.Fatal(err)
 	}
 
-	validate := validator.NewValidator()
+	validator := validate.NewValidator()
 
 	accountStorage := account.NewStorage(db)
 	accountService := account.NewService(accountStorage)
-	accountHandler := account.NewHandler(accountService, validate)
+	accountHandler := account.NewHandler(accountService, validator)
 
 	usersStorage := users.NewStorage(db)
 	usersService := users.NewService(usersStorage)
-	usersHandler := users.NewHandler(usersService, validate)
+	usersHandler := users.NewHandler(usersService, validator)
 
 	postsStorage := posts.NewStorage(db)
 	postsService := posts.NewService(postsStorage)
-	postsHandler := posts.NewHandler(postsService, validate)
+	postsHandler := posts.NewHandler(postsService, validator)
 
 	commentsStorage := comments.NewStorage(db)
 	commentsService := comments.NewService(commentsStorage)
-	commentsHandler := comments.NewHandler(commentsService, validate)
+	commentsHandler := comments.NewHandler(commentsService, validator)
 
 	router := chi.NewRouter()
 	router.Use(middleware.Cors)

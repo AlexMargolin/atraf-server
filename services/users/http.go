@@ -7,7 +7,7 @@ import (
 
 	"atraf-server/pkg/rest"
 	"atraf-server/pkg/uid"
-	"atraf-server/pkg/validator"
+	"atraf-server/pkg/validate"
 )
 
 type CreateResponse struct {
@@ -19,8 +19,8 @@ type ReadOneResponse struct {
 }
 
 type Handler struct {
-	service   *Service
-	validator *validator.Validator
+	service  *Service
+	validate *validate.Validate
 }
 
 func (handler *Handler) ReadOne() http.HandlerFunc {
@@ -41,6 +41,6 @@ func (handler *Handler) ReadOne() http.HandlerFunc {
 	}
 }
 
-func NewHandler(service *Service, validator *validator.Validator) *Handler {
-	return &Handler{service, validator}
+func NewHandler(s *Service, v *validate.Validate) *Handler {
+	return &Handler{s, v}
 }

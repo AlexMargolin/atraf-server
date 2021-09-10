@@ -28,7 +28,12 @@ type Postgres struct {
 func (postgres Postgres) ById(userId uid.UID) (User, error) {
 	var user PostgresUser
 
-	query := "SELECT uuid, account_uuid, email, first_name, last_name, profile_picture, created_at, updated_at, deleted_at FROM users WHERE uuid = $1 LIMIT 1"
+	query := `
+	SELECT uuid, account_uuid, email, first_name, last_name, profile_picture, created_at, updated_at, deleted_at 
+	FROM users 
+	WHERE uuid = $1 
+	LIMIT 1`
+
 	if err := postgres.Db.Get(&user, query, userId); err != nil {
 		return User{}, err
 	}
@@ -39,7 +44,11 @@ func (postgres Postgres) ById(userId uid.UID) (User, error) {
 func (postgres Postgres) ByIds(userIds []uid.UID) ([]User, error) {
 	var users []PostgresUser
 
-	query := "SELECT uuid, account_uuid, email, first_name, last_name, profile_picture, created_at, updated_at, deleted_at FROM users WHERE uuid IN (?)"
+	query := `
+	SELECT uuid, account_uuid, email, first_name, last_name, profile_picture, created_at, updated_at, deleted_at 
+	FROM users 
+	WHERE uuid IN (?)`
+
 	query, args, err := sqlx.In(query, userIds)
 	if err != nil {
 		return []User{}, err
@@ -56,7 +65,12 @@ func (postgres Postgres) ByIds(userIds []uid.UID) ([]User, error) {
 func (postgres Postgres) ByAccountId(accountId uid.UID) (User, error) {
 	var user PostgresUser
 
-	query := "SELECT uuid, account_uuid, email, first_name, last_name, profile_picture, created_at, updated_at, deleted_at FROM users WHERE account_uuid = $1 LIMIT 1"
+	query := `
+	SELECT uuid, account_uuid, email, first_name, last_name, profile_picture, created_at, updated_at, deleted_at 
+	FROM users 
+	WHERE account_uuid = $1 
+	LIMIT 1`
+
 	if err := postgres.Db.Get(&user, query, accountId); err != nil {
 		return User{}, err
 	}
@@ -64,15 +78,16 @@ func (postgres Postgres) ByAccountId(accountId uid.UID) (User, error) {
 	return prepareOne(user), nil
 }
 
-func (postgres Postgres) Insert(accountId uid.UID, fields UserFields) (uid.UID, error) {
-	var uuid uid.UID
+func (postgres Postgres) Insert(accountId uid.UID, fields UserFields) error {
+	query := `
+	INSERT INTO users (account_uuid, email, first_name, last_name, profile_picture) 
+	VALUES ($1, $2, $3, $4, $5)`
 
-	query := "INSERT INTO users (account_uuid, email, first_name, last_name, profile_picture) VALUES ($1, $2, $3, $4, $5) RETURNING uuid"
-	if err := postgres.Db.Get(&uuid, query, accountId, fields.Email, fields.FirstName, fields.LastName, fields.ProfilePicture); err != nil {
-		return uuid, err
+	if _, err := postgres.Db.Exec(query, accountId, fields.Email, fields.FirstName, fields.LastName, fields.ProfilePicture); err != nil {
+		return err
 	}
 
-	return uuid, nil
+	return nil
 }
 
 func prepareOne(pu PostgresUser) User {

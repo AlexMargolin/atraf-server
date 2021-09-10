@@ -2,6 +2,8 @@ package posts
 
 import (
 	"database/sql"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -27,7 +29,13 @@ type Postgres struct {
 func (postgres Postgres) One(postId uid.UID) (Post, error) {
 	var post PostgresPost
 
-	query := "SELECT uuid, user_uuid, title, body, created_at, updated_at, deleted_at FROM posts WHERE uuid = $1 LIMIT 1"
+	query := `
+	SELECT uuid, user_uuid, title, body, created_at, updated_at, deleted_at 
+	FROM posts 
+	WHERE uuid = $1 
+	LIMIT 1`
+
+	// Returns an error when no results are found.
 	if err := postgres.Db.Get(&post, query, postId); err != nil {
 		return Post{}, err
 	}
@@ -75,15 +83,23 @@ func (postgres Postgres) Insert(userId uid.UID, fields PostFields) (uid.UID, err
 	return uuid, nil
 }
 
-func (postgres Postgres) Update(postId uid.UID, fields PostFields) (uid.UID, error) {
-	var uuid uid.UID
-
-	query := "UPDATE posts SET title = $2, body = $3 WHERE uuid = $1 RETURNING uuid"
-	if err := postgres.Db.Get(&uuid, query, postId, fields.Title, fields.Body); err != nil {
-		return uuid, err
+func (postgres Postgres) Update(postId uid.UID, fields PostFields) error {
+	query := "UPDATE posts SET title = $2, body = $3 WHERE uuid = $1"
+	result, err := postgres.Db.Exec(query, postId, fields.Title, fields.Body)
+	if err != nil {
+		return err
 	}
 
-	return uuid, nil
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return errors.New(fmt.Sprintf("no updates were made to post id [%s]", postId))
+	}
+
+	return nil
 }
 
 func prepareOne(pp PostgresPost) Post {

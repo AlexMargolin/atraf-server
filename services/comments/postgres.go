@@ -2,6 +2,8 @@ package comments
 
 import (
 	"database/sql"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -27,7 +29,12 @@ type Postgres struct {
 func (postgres *Postgres) Many(sourceId uid.UID) ([]Comment, error) {
 	var comments []PostgresComment
 
-	query := "SELECT  uuid, user_uuid, source_uuid, parent_uuid, body, created_at, updated_at, deleted_at FROM comments WHERE source_uuid = $1 ORDER BY created_at"
+	query := `
+	SELECT  uuid, user_uuid, source_uuid, parent_uuid, body, created_at, updated_at, deleted_at 
+	FROM comments 
+	WHERE source_uuid = $1
+	ORDER BY created_at`
+
 	if err := postgres.Db.Select(&comments, query, sourceId); err != nil {
 		return nil, err
 	}
@@ -46,15 +53,23 @@ func (postgres *Postgres) Insert(userId uid.UID, sourceId uid.UID, parentId uid.
 	return uuid, nil
 }
 
-func (postgres *Postgres) Update(commentId uid.UID, fields CommentFields) (uid.UID, error) {
-	var uuid uid.UID
-
-	query := "UPDATE comments SET body = $2 WHERE uuid = $1 RETURNING uuid"
-	if err := postgres.Db.Get(&uuid, query, commentId, fields.Body); err != nil {
-		return uuid, err
+func (postgres *Postgres) Update(commentId uid.UID, fields CommentFields) error {
+	query := "UPDATE comments SET body = $2 WHERE uuid = $1"
+	result, err := postgres.Db.Exec(query, commentId, fields.Body)
+	if err != nil {
+		return err
 	}
 
-	return uuid, nil
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return errors.New(fmt.Sprintf("no updates were made to comment id [%s]", commentId))
+	}
+
+	return nil
 }
 
 func prepareOne(pc PostgresComment) Comment {

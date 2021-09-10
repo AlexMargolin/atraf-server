@@ -7,17 +7,12 @@ import (
 	"atraf-server/services/users"
 
 	"atraf-server/pkg/rest"
-	"atraf-server/pkg/uid"
-	"atraf-server/pkg/validator"
+	"atraf-server/pkg/validate"
 )
 
 type RegisterRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
-}
-
-type RegisterResponse struct {
-	UserId uid.UID `json:"user_id"`
 }
 
 type LoginRequest struct {
@@ -39,21 +34,20 @@ type ResetRequest struct {
 }
 
 type Handler struct {
-	service   *Service
-	validator *validator.Validator
+	service  *Service
+	validate *validate.Validate
 }
 
-// Register Depends on: Users
 func (handler *Handler) Register(u *users.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request RegisterRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			rest.Error(w, http.StatusBadRequest)
+			rest.Error(w, http.StatusUnsupportedMediaType)
 			return
 		}
 
-		if err := handler.validator.Struct(request); err != nil {
+		if err := handler.validate.Struct(request); err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity)
 			return
 		}
@@ -64,14 +58,13 @@ func (handler *Handler) Register(u *users.Service) http.HandlerFunc {
 			return
 		}
 
-		// DOMAIN Dependency (Users)
-		__userId, err := u.NewUser(accountId, users.UserFields{Email: request.Email})
-		if err != nil {
+		// Dependency(Users) : could be a webhook.
+		if err = u.NewUser(accountId, users.UserFields{Email: request.Email}); err != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
 		}
 
-		rest.Success(w, http.StatusCreated, RegisterResponse{__userId})
+		rest.Success(w, http.StatusCreated, nil)
 	}
 }
 
@@ -80,48 +73,48 @@ func (handler *Handler) Login() http.HandlerFunc {
 		var request LoginRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			rest.Error(w, http.StatusBadRequest)
+			rest.Error(w, http.StatusUnsupportedMediaType)
 			return
 		}
 
-		if err := handler.validator.Struct(request); err != nil {
+		if err := handler.validate.Struct(request); err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity)
 			return
 		}
 
-		token, err := handler.service.Login(request.Email, request.Password)
+		accessToken, err := handler.service.Login(request.Email, request.Password)
 		if err != nil {
 			rest.Error(w, http.StatusUnauthorized)
 			return
 		}
 
-		rest.Success(w, http.StatusOK, LoginResponse{token})
+		rest.Success(w, http.StatusOK, &LoginResponse{
+			accessToken,
+		})
 	}
 }
 
-// Forgot attempts to locate an account using the request email.
-// once located, a password reset email is sent containing a signed JWT with the account id.
-// returns the same status code regardless of whether the account exists or not.
 func (handler *Handler) Forgot() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request ForgotRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			rest.Error(w, http.StatusBadRequest)
+			rest.Error(w, http.StatusUnsupportedMediaType)
 			return
 		}
 
-		if err := handler.validator.Struct(request); err != nil {
+		if err := handler.validate.Struct(request); err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity)
 			return
 		}
 
+		// Whether an account can be found or not, a "successful" response is returned.
 		if err := handler.service.Forgot(request.Email); err != nil {
-			rest.Success(w, http.StatusNoContent)
+			rest.Success(w, http.StatusNoContent, nil)
 			return
 		}
 
-		rest.Success(w, http.StatusNoContent)
+		rest.Success(w, http.StatusNoContent, nil)
 	}
 }
 
@@ -130,11 +123,11 @@ func (handler *Handler) Reset() http.HandlerFunc {
 		var request ResetRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			rest.Error(w, http.StatusBadRequest)
+			rest.Error(w, http.StatusUnsupportedMediaType)
 			return
 		}
 
-		if err := handler.validator.Struct(request); err != nil {
+		if err := handler.validate.Struct(request); err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity)
 			return
 		}
@@ -144,10 +137,10 @@ func (handler *Handler) Reset() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusNoContent)
+		rest.Success(w, http.StatusNoContent, nil)
 	}
 }
 
-func NewHandler(service *Service, v *validator.Validator) *Handler {
-	return &Handler{service, v}
+func NewHandler(s *Service, v *validate.Validate) *Handler {
+	return &Handler{s, v}
 }

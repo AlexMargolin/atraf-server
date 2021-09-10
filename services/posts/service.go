@@ -26,8 +26,8 @@ type PostFields struct {
 type Storage interface {
 	One(postId uid.UID) (Post, error)
 	Many(pagination *middleware.PaginationContext) ([]Post, error)
-	Update(postId uid.UID, fields PostFields) (uid.UID, error)
 	Insert(userId uid.UID, fields PostFields) (uid.UID, error)
+	Update(postId uid.UID, fields PostFields) error
 }
 
 type Service struct {
@@ -46,7 +46,7 @@ func (service *Service) NewPost(userId uid.UID, fields PostFields) (uid.UID, err
 	return service.storage.Insert(userId, fields)
 }
 
-func (service *Service) UpdatePost(postId uid.UID, fields PostFields) (uid.UID, error) {
+func (service *Service) UpdatePost(postId uid.UID, fields PostFields) error {
 	return service.storage.Update(postId, fields)
 }
 

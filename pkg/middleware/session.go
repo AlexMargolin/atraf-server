@@ -23,7 +23,6 @@ type SessionContext struct {
 	UserId    uid.UID
 }
 
-// Session Depends on: Users
 func Session(u *users.Service) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -33,8 +32,7 @@ func Session(u *users.Service) func(http.Handler) http.Handler {
 				return
 			}
 
-			secret := os.Getenv("ACCESS_TOKEN_SECRET")
-			claims, err := token.Verify(secret, unverifiedToken)
+			claims, err := token.Verify(os.Getenv("ACCESS_TOKEN_SECRET"), unverifiedToken)
 			if err != nil {
 				rest.Error(w, http.StatusUnauthorized)
 				return
@@ -46,14 +44,17 @@ func Session(u *users.Service) func(http.Handler) http.Handler {
 				return
 			}
 
-			// DOMAIN Dependency (Users)
+			// Dependency(Users)
 			__user, err := u.UserByAccount(accountId)
 			if err != nil {
 				rest.Error(w, http.StatusUnauthorized)
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), SessionContextKey, &SessionContext{accountId, __user.Id})
+			ctx := context.WithValue(r.Context(), SessionContextKey, &SessionContext{
+				accountId,
+				__user.Id},
+			)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

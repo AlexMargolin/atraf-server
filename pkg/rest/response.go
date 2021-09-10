@@ -2,11 +2,10 @@ package rest
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 )
 
-type ResponseData struct {
+type Response struct {
 	Data interface{} `json:"data"`
 }
 
@@ -14,20 +13,15 @@ func SetHeaders(w http.ResponseWriter) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 }
 
-func Success(w http.ResponseWriter, code int, data ...interface{}) {
+func Success(w http.ResponseWriter, code int, data interface{}) {
 	SetHeaders(w)
 
-	// exit early for no content responses
-	if code == http.StatusNoContent {
+	if data == nil {
 		w.WriteHeader(code)
 		return
 	}
 
-	response := ResponseData{data}
-	if len(data) > 0 {
-		response.Data = data[0]
-	}
-
+	response := Response{data}
 	encoded, err := json.Marshal(response)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -39,7 +33,7 @@ func Success(w http.ResponseWriter, code int, data ...interface{}) {
 
 	// When write fails, we most likely won't be able to respond to the client.
 	if _, err = w.Write(encoded); err != nil {
-		log.Println(err)
+		// TODO add error log
 		return
 	}
 }

@@ -34,6 +34,7 @@
 32. add updated at trigger
 33. foreign keys (account + account_reset)
 34. cron job to delete requested password resets
+35. function comments
 
 # Features
 
