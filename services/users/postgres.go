@@ -29,7 +29,15 @@ func (postgres Postgres) ById(userId uid.UID) (User, error) {
 	var user PostgresUser
 
 	query := `
-	SELECT uuid, account_uuid, email, first_name, last_name, profile_picture, created_at, updated_at, deleted_at 
+	SELECT uuid, 
+	       account_uuid,
+	       email,
+	       first_name,
+	       last_name,
+	       profile_picture,
+	       created_at,
+	       updated_at,
+	       deleted_at 
 	FROM users 
 	WHERE uuid = $1 
 	LIMIT 1`
@@ -45,7 +53,15 @@ func (postgres Postgres) ByIds(userIds []uid.UID) ([]User, error) {
 	var users []PostgresUser
 
 	query := `
-	SELECT uuid, account_uuid, email, first_name, last_name, profile_picture, created_at, updated_at, deleted_at 
+	SELECT uuid,
+	       account_uuid,
+	       email,
+	       first_name,
+	       last_name,
+	       profile_picture,
+	       created_at,
+	       updated_at,
+	       deleted_at 
 	FROM users 
 	WHERE uuid IN (?)`
 
@@ -66,7 +82,15 @@ func (postgres Postgres) ByAccountId(accountId uid.UID) (User, error) {
 	var user PostgresUser
 
 	query := `
-	SELECT uuid, account_uuid, email, first_name, last_name, profile_picture, created_at, updated_at, deleted_at 
+	SELECT uuid,
+	       account_uuid,
+	       email,
+	       first_name,
+	       last_name,
+	       profile_picture,
+	       created_at,
+	       updated_at,
+	       deleted_at 
 	FROM users 
 	WHERE account_uuid = $1 
 	LIMIT 1`

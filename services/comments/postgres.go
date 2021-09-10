@@ -30,7 +30,14 @@ func (postgres *Postgres) Many(sourceId uid.UID) ([]Comment, error) {
 	var comments []PostgresComment
 
 	query := `
-	SELECT  uuid, user_uuid, source_uuid, parent_uuid, body, created_at, updated_at, deleted_at 
+	SELECT uuid,
+	       user_uuid,
+	       source_uuid,
+	       parent_uuid,
+	       body,
+	       created_at,
+	       updated_at,
+	       deleted_at 
 	FROM comments 
 	WHERE source_uuid = $1
 	ORDER BY created_at`
@@ -45,7 +52,11 @@ func (postgres *Postgres) Many(sourceId uid.UID) ([]Comment, error) {
 func (postgres *Postgres) Insert(userId uid.UID, sourceId uid.UID, parentId uid.UID, fields CommentFields) (uid.UID, error) {
 	var uuid uid.UID
 
-	query := "INSERT INTO comments (user_uuid, source_uuid, parent_uuid, body) VALUES ($1, $2, $3, $4) RETURNING uuid"
+	query := `
+	INSERT INTO comments (user_uuid, source_uuid, parent_uuid, body) 
+	VALUES ($1, $2, $3, $4) 
+	RETURNING uuid`
+
 	if err := postgres.Db.Get(&uuid, query, userId, sourceId, parentId, fields.Body); err != nil {
 		return uuid, err
 	}
