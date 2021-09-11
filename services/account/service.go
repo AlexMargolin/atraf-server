@@ -1,8 +1,6 @@
 package account
 
 import (
-	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -10,6 +8,11 @@ import (
 
 	"atraf-server/pkg/token"
 	"atraf-server/pkg/uid"
+)
+
+const (
+	AccessTokenValidFor = time.Minute * 15
+	ResetTokenValidFor  = time.Minute * 5
 )
 
 type Account struct {
@@ -21,10 +24,10 @@ type Account struct {
 }
 
 type Storage interface {
+	ById(accountId uid.UID) (Account, error)
 	ByEmail(email string) (Account, error)
-	Insert(email string, passwordHash []byte) (uid.UID, error)
-	SetReset(accountId uid.UID) (uid.UID, error)
-	UpdatePassword(tokenId uid.UID, passwordHash []byte) error
+	Insert(email string, passwordHash []byte) (uid.UID, int, error)
+	UpdatePassword(accountId uid.UID, passwordHash []byte) error
 }
 
 type Service struct {
@@ -39,8 +42,12 @@ func (service *Service) Register(email string, password string) (uid.UID, error)
 		return accountId, err
 	}
 
-	accountId, err = service.storage.Insert(email, passwordHash)
+	accountId, code, err := service.storage.Insert(email, passwordHash)
 	if err != nil {
+		return accountId, err
+	}
+
+	if err = ActivationEmail(email, code); err != nil {
 		return accountId, err
 	}
 
@@ -57,7 +64,14 @@ func (service *Service) Login(email string, password string) (string, error) {
 		return "", err
 	}
 
-	accessToken, err := token.New(os.Getenv("ACCESS_TOKEN_SECRET"), account.Id.String())
+	claims := token.Claims{
+		Subject:   account.Id.String(),
+		IssuedAt:  time.Now().Unix(),
+		ExpiresAt: time.Now().Add(AccessTokenValidFor).Unix(),
+	}
+
+	secret := os.Getenv("ACCESS_TOKEN_SECRET")
+	accessToken, err := token.New(secret, claims)
 	if err != nil {
 		return "", err
 	}
@@ -71,44 +85,44 @@ func (service *Service) Forgot(email string) error {
 		return err
 	}
 
-	tokenId, err := service.storage.SetReset(account.Id)
+	claims := token.Claims{
+		Subject:   account.Id.String(),
+		IssuedAt:  time.Now().Unix(),
+		ExpiresAt: time.Now().Add(ResetTokenValidFor).Unix(),
+	}
+
+	secret := os.Getenv("RESET_TOKEN_SECRET")
+	resetToken, err := token.New(secret, claims)
 	if err != nil {
 		return err
 	}
 
-	resetToken, err := token.New(os.Getenv("RESET_TOKEN_SECRET"), tokenId.String())
-	if err != nil {
+	if err = PasswordResetMail(account.Email, resetToken); err != nil {
 		return err
 	}
-
-	resetLink := service.resetLink(resetToken)
-	log.Println(resetLink) // todo email the link
 
 	return nil
 }
 
-func (service *Service) Reset(unverifiedToken string, password string) error {
+func (service *Service) UpdatePassword(accountId uid.UID, password string) error {
+	account, err := service.storage.ById(accountId)
+	if err != nil {
+		return err
+	}
+
 	passwordHash, err := service.newPasswordHash(password)
 	if err != nil {
 		return err
 	}
 
-	claims, err := token.Verify(os.Getenv("RESET_TOKEN_SECRET"), unverifiedToken)
-	if err != nil {
+	if err = service.storage.UpdatePassword(accountId, passwordHash); err != nil {
 		return err
 	}
 
-	tokenId, err := uid.FromString(claims.Subject)
-	if err != nil {
+	if err = PasswordNotification(account.Email); err != nil {
 		return err
 	}
 
-	if err = service.storage.UpdatePassword(tokenId, passwordHash); err != nil {
-		return err
-	}
-
-	// todo send password changed notification email
-	log.Println("password changed")
 	return nil
 }
 
@@ -118,10 +132,6 @@ func (Service) newPasswordHash(password string) ([]byte, error) {
 
 func (Service) comparePasswordHash(password string, passwordHash []byte) error {
 	return bcrypt.CompareHashAndPassword(passwordHash, []byte(password))
-}
-
-func (Service) resetLink(resetToken string) string {
-	return fmt.Sprintf("%s/reset/%s", os.Getenv("CLIENT_URL"), resetToken)
 }
 
 func NewService(storage Storage) *Service {

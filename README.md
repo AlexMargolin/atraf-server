@@ -35,6 +35,8 @@
 33. foreign keys (account + account_reset)
 34. cron job to delete requested password resets
 35. function comments
+36. prevent time attacks @ login / register and any account related stuff
+37. email lower case
 
 # Features
 

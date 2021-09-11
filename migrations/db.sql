@@ -5,17 +5,18 @@ CREATE TABLE IF NOT EXISTS accounts
     uuid          uuid      NOT NULL PRIMARY KEY default gen_random_uuid(),
     email         text      NOT NULL UNIQUE,
     password_hash text      NOT NULL,
+    active        bool                           default false,
     created_at    timestamp NOT NULL             default current_timestamp,
     updated_at    timestamp,
     deleted_at    timestamp
 );
 
-DROP TABLE IF EXISTS accounts_reset;
-CREATE TABLE IF NOT EXISTS accounts_reset
+DROP TABLE IF EXISTS accounts_activations;
+CREATE TABLE IF NOT EXISTS accounts_activations
 (
-    account_uuid uuid        NOT NULL PRIMARY KEY,
-    token_uuid   uuid UNIQUE NOT NULL default gen_random_uuid(),
-    created_at   timestamp   NOT NULL default current_timestamp
+    account_uuid    uuid      NOT NULL PRIMARY KEY,
+    activation_code integer   NOT NULL,
+    created_at      timestamp NOT NULL default current_timestamp
 );
 
 /*USERS*/

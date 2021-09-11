@@ -4,20 +4,14 @@ import (
 	"errors"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/golang-jwt/jwt"
 )
 
 type Claims = jwt.StandardClaims
 
-func New(secret string, subject string) (string, error) {
-	unsignedToken := jwt.NewWithClaims(jwt.SigningMethodHS512, Claims{
-		Subject:   subject,
-		IssuedAt:  time.Now().Unix(),
-		ExpiresAt: time.Now().Add(time.Minute * 15).Unix(),
-	})
-
+func New(secret string, c Claims) (string, error) {
+	unsignedToken := jwt.NewWithClaims(jwt.SigningMethodHS512, c)
 	return unsignedToken.SignedString([]byte(secret))
 }
 

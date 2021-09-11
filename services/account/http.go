@@ -3,7 +3,10 @@ package account
 import (
 	"encoding/json"
 	"net/http"
+	"os"
 
+	"atraf-server/pkg/token"
+	"atraf-server/pkg/uid"
 	"atraf-server/services/users"
 
 	"atraf-server/pkg/rest"
@@ -13,6 +16,9 @@ import (
 type RegisterRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
+}
+
+type ActivateRequest struct {
 }
 
 type LoginRequest struct {
@@ -65,6 +71,12 @@ func (handler *Handler) Register(u *users.Service) http.HandlerFunc {
 		}
 
 		rest.Success(w, http.StatusCreated, nil)
+	}
+}
+
+func (handler *Handler) Activate() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// TODO implement...
 	}
 }
 
@@ -132,7 +144,19 @@ func (handler *Handler) Reset() http.HandlerFunc {
 			return
 		}
 
-		if err := handler.service.Reset(request.Token, request.NewPassword); err != nil {
+		claims, err := token.Verify(os.Getenv("RESET_TOKEN_SECRET"), request.Token)
+		if err != nil {
+			rest.Error(w, http.StatusBadRequest)
+			return
+		}
+
+		accountId, err := uid.FromString(claims.Subject)
+		if err != nil {
+			rest.Error(w, http.StatusBadRequest)
+			return
+		}
+
+		if err = handler.service.UpdatePassword(accountId, request.NewPassword); err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
 		}

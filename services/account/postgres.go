@@ -3,7 +3,6 @@ package account
 import (
 	"database/sql"
 	"errors"
-	"log"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -15,6 +14,7 @@ type PostgresAccount struct {
 	Uuid         uid.UID      `db:"uuid"`
 	Email        string       `db:"email"`
 	PasswordHash []byte       `db:"password_hash"`
+	Active       bool         `db:"active"`
 	CreatedAt    time.Time    `db:"created_at"`
 	UpdatedAt    sql.NullTime `db:"updated_at"`
 	DeletedAt    sql.NullTime `db:"deleted_at"`
@@ -24,24 +24,67 @@ type Postgres struct {
 	Db *sqlx.DB
 }
 
-func (postgres *Postgres) Insert(email string, passwordHash []byte) (uid.UID, error) {
+func (postgres *Postgres) Insert(email string, passwordHash []byte) (uid.UID, int, error) {
+	var code int
 	var uuid uid.UID
 
-	query := "INSERT INTO accounts (email, password_hash) VALUES ($1, $2) RETURNING uuid"
-	if err := postgres.Db.Get(&uuid, query, email, passwordHash); err != nil {
-		return uuid, err
+	tx, err := postgres.Db.Beginx()
+	if err != nil {
+		return uuid, code, err
 	}
 
-	return uuid, nil
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		} else {
+			_ = tx.Commit()
+		}
+	}()
+
+	accountQuery := `
+	INSERT INTO accounts (email, password_hash) 
+		VALUES ($1, $2) 
+	RETURNING uuid`
+
+	activationsQuery := `
+	INSERT INTO accounts_activations 
+		VALUES ($1, floor(random() * (999999 - 100000 + 1) + 100000)) 
+	RETURNING activation_code`
+
+	if err = tx.Get(&uuid, accountQuery, email, passwordHash); err != nil {
+		return uuid, code, err
+	}
+
+	if err = tx.Get(&code, activationsQuery, uuid); err != nil {
+		return uuid, code, err
+	}
+
+	return uuid, code, nil
+}
+
+func (postgres *Postgres) ById(accountId uid.UID) (Account, error) {
+	var account PostgresAccount
+
+	query := `
+	SELECT uuid, email, password_hash, active, created_at, updated_at, deleted_at 
+	FROM accounts 
+	WHERE uuid = $1
+	LIMIT 1`
+
+	if err := postgres.Db.Get(&account, query, accountId); err != nil {
+		return Account{}, err
+	}
+
+	return prepareOne(account), nil
 }
 
 func (postgres *Postgres) ByEmail(email string) (Account, error) {
 	var account PostgresAccount
 
 	query := `
-	SELECT uuid, email, password_hash, created_at, updated_at, deleted_at 
+	SELECT uuid, email, password_hash, active, created_at, updated_at, deleted_at 
 	FROM accounts 
-	WHERE email = $1 
+	WHERE email = $1
 	LIMIT 1`
 
 	if err := postgres.Db.Get(&account, query, email); err != nil {
@@ -51,52 +94,21 @@ func (postgres *Postgres) ByEmail(email string) (Account, error) {
 	return prepareOne(account), nil
 }
 
-func (postgres *Postgres) SetReset(accountId uid.UID) (uid.UID, error) {
-	var uuid uid.UID
+func (postgres *Postgres) UpdatePassword(accountId uid.UID, passwordHash []byte) error {
+	query := "UPDATE accounts SET password_hash = $1 WHERE uuid = $2"
 
-	query := `
-	INSERT INTO accounts_reset (account_uuid) 
-	VALUES ($1) 
-	ON CONFLICT (account_uuid) DO UPDATE 
-	    SET token_uuid = gen_random_uuid(),
-	        created_at = CURRENT_TIMESTAMP 
-	RETURNING token_uuid`
-
-	if err := postgres.Db.Get(&uuid, query, accountId); err != nil {
-		return uuid, err
-	}
-
-	return uuid, nil
-}
-
-func (postgres *Postgres) UpdatePassword(tokenId uid.UID, passwordHash []byte) error {
-	tx := postgres.Db.MustBegin()
-
-	updateQuery := `
-	UPDATE accounts
-	SET password_hash = $1
-	FROM accounts_reset
-	WHERE accounts.uuid = accounts_reset.account_uuid
-	AND accounts_reset.token_uuid = $2`
-
-	deleteQuery := `
-	DELETE FROM accounts_reset
-	WHERE token_uuid = $1`
-
-	result := tx.MustExec(updateQuery, passwordHash, tokenId)
-	tx.MustExec(deleteQuery, tokenId)
-
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
-		if err := tx.Rollback(); err != nil {
-			return err
-		}
-		return errors.New("account reset record could not be found")
-	}
-
-	if err := tx.Commit(); err != nil {
-		log.Println(err)
+	result, err := postgres.Db.Exec(query, passwordHash, accountId)
+	if err != nil {
 		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return errors.New("password couldn't be updated")
 	}
 
 	return nil
