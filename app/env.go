@@ -20,6 +20,10 @@ func CheckEnvironment() error {
 		"DB_NAME",
 		"SERVER_PORT",
 		"SERVER_HOST",
+		"SMTP_HOST",
+		"SMTP_PORT",
+		"SMTP_USER",
+		"SMTP_PASS",
 		"ACCESS_TOKEN_SECRET",
 		"RESET_TOKEN_SECRET",
 	}
