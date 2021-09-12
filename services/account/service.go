@@ -49,6 +49,15 @@ func (service *Service) Register(email string, password string) (Account, error)
 }
 
 func (service *Service) Activate(accountId uid.UID) error {
+	account, err := service.storage.ByAccountId(accountId)
+	if err != nil {
+		return err
+	}
+
+	if account.Active {
+		return errors.New("account already active")
+	}
+
 	return service.storage.UpdateStatus(accountId, true)
 }
 
@@ -102,7 +111,7 @@ func (service *Service) UpdatePassword(accountId uid.UID, password string) error
 		return err
 	}
 
-	if err = service.storage.UpdatePassword(accountId, passwordHash); err != nil {
+	if err = service.storage.UpdatePassword(account.Id, passwordHash); err != nil {
 		return err
 	}
 
