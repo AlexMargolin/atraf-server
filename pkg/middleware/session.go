@@ -20,7 +20,7 @@ type SessionContext struct {
 	AccountId uid.UID
 }
 
-func Session() func(http.Handler) http.Handler {
+func Session(active bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			unverifiedToken, err := token.FromHeader(r, AuthTokenHeader)
@@ -35,7 +35,7 @@ func Session() func(http.Handler) http.Handler {
 				return
 			}
 
-			if claims.Active == false {
+			if active && claims.Active == false {
 				rest.Error(w, http.StatusUnauthorized)
 				return
 			}

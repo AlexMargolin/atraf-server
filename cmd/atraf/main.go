@@ -57,14 +57,20 @@ func main() {
 		router.Patch("/account/reset", accountHandler.Reset())
 	})
 
-	// Authenticated Routes (Private)
+	// Authenticated Inactive Account Routes (Private)
 	// Routes defined under this group have access to the Session Context
 	router.Group(func(router chi.Router) {
-		router.Use(middleware.Session())
+		router.Use(middleware.Session(false))
 
-		// Accounts
+		// Account
 		router.Post("/account/activate", accountHandler.Activate())
 		router.Post("/account/activate/resend", accountHandler.Resend())
+	})
+
+	// Authenticated Active Account Routes (Private)
+	// Routes defined under this group have access to the Session Context
+	router.Group(func(router chi.Router) {
+		router.Use(middleware.Session(true))
 
 		// Users
 		router.Get("/users/{user_id}", usersHandler.ReadOne())

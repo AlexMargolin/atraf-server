@@ -1,6 +1,7 @@
 package account
 
 import (
+	"errors"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -55,6 +56,10 @@ func (service *Service) ResendActivation(accountId uid.UID) error {
 	account, err := service.storage.ByAccountId(accountId)
 	if err != nil {
 		return err
+	}
+
+	if account.Active {
+		return errors.New("account already active")
 	}
 
 	return SendActivationMail(account)
