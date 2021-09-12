@@ -2,6 +2,7 @@ package account
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -55,7 +56,7 @@ func (service *Service) Activate(accountId uid.UID) error {
 	}
 
 	if account.Active {
-		return errors.New("account already active")
+		return errors.New(fmt.Sprintf("account [%s] is already active", account.Id))
 	}
 
 	return service.storage.UpdateStatus(accountId, true)
@@ -68,7 +69,7 @@ func (service *Service) ResendActivation(accountId uid.UID) error {
 	}
 
 	if account.Active {
-		return errors.New("account already active")
+		return errors.New(fmt.Sprintf("account [%s] is already active", account.Id))
 	}
 
 	return SendActivationMail(account)
@@ -93,11 +94,7 @@ func (service *Service) Forgot(email string) error {
 		return err
 	}
 
-	if err = SendPasswordResetMail(account); err != nil {
-		return err
-	}
-
-	return nil
+	return SendPasswordResetMail(account)
 }
 
 func (service *Service) UpdatePassword(accountId uid.UID, password string) error {

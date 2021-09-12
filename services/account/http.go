@@ -69,7 +69,10 @@ func (handler *Handler) Register(u *users.Service) http.HandlerFunc {
 		}
 
 		// Dependency(Users)
-		if err = u.NewUser(account.Id, users.UserFields{Email: account.Email}); err != nil {
+		err = u.NewUser(account.Id, users.UserFields{
+			Email: account.Email,
+		})
+		if err != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
 		}
@@ -104,12 +107,10 @@ func (handler *Handler) Activate() http.HandlerFunc {
 		}
 
 		// Issue new access token
-		claims := token.AccessTokenCustomClaims{
+		at, err := token.NewAccessToken(token.AccessTokenCustomClaims{
 			Active:    true,
 			AccountId: t.AccountId,
-		}
-
-		at, err := token.NewAccessToken(claims)
+		})
 		if err != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
@@ -154,12 +155,11 @@ func (handler *Handler) Login() http.HandlerFunc {
 			return
 		}
 
-		claims := token.AccessTokenCustomClaims{
+		// Issue Access Token
+		at, err := token.NewAccessToken(token.AccessTokenCustomClaims{
 			Active:    account.Active,
 			AccountId: account.Id,
-		}
-
-		at, err := token.NewAccessToken(claims)
+		})
 		if err != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
