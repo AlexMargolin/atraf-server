@@ -3,10 +3,9 @@ package account
 import (
 	"encoding/json"
 	"net/http"
-	"os"
 
+	"atraf-server/pkg/middleware"
 	"atraf-server/pkg/token"
-	"atraf-server/pkg/uid"
 	"atraf-server/services/users"
 
 	"atraf-server/pkg/rest"
@@ -19,6 +18,11 @@ type RegisterRequest struct {
 }
 
 type ActivateRequest struct {
+	Token string `json:"token" validate:"required"`
+}
+
+type ActivateResponse struct {
+	AccessToken string `json:"access_token"`
 }
 
 type LoginRequest struct {
@@ -58,14 +62,14 @@ func (handler *Handler) Register(u *users.Service) http.HandlerFunc {
 			return
 		}
 
-		accountId, err := handler.service.Register(request.Email, request.Password)
+		account, err := handler.service.Register(request.Email, request.Password)
 		if err != nil {
 			rest.Error(w, http.StatusConflict)
 			return
 		}
 
-		// Dependency(Users) : could be a webhook.
-		if err = u.NewUser(accountId, users.UserFields{Email: request.Email}); err != nil {
+		// Dependency(Users)
+		if err = u.NewUser(account.Id, users.UserFields{Email: account.Email}); err != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
 		}
@@ -76,7 +80,57 @@ func (handler *Handler) Register(u *users.Service) http.HandlerFunc {
 
 func (handler *Handler) Activate() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// TODO implement...
+		var request ActivateRequest
+
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			rest.Error(w, http.StatusUnsupportedMediaType)
+			return
+		}
+
+		if err := handler.validate.Struct(request); err != nil {
+			rest.Error(w, http.StatusUnprocessableEntity)
+			return
+		}
+
+		t, err := token.VerifyActivationToken(request.Token)
+		if err != nil {
+			rest.Error(w, http.StatusUnauthorized)
+			return
+		}
+
+		if err = handler.service.Activate(t.AccountId); err != nil {
+			rest.Error(w, http.StatusBadRequest)
+			return
+		}
+
+		// Issue new access token
+		claims := token.AccessTokenCustomClaims{
+			Active:    true,
+			AccountId: t.AccountId,
+		}
+
+		at, err := token.NewAccessToken(claims)
+		if err != nil {
+			rest.Error(w, http.StatusInternalServerError)
+			return
+		}
+
+		rest.Success(w, http.StatusOK, &ActivateResponse{
+			at,
+		})
+	}
+}
+
+func (handler *Handler) Resend() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		session := middleware.GetSessionContext(r)
+
+		if err := handler.service.ResendActivation(session.AccountId); err != nil {
+			rest.Error(w, http.StatusBadRequest)
+			return
+		}
+
+		rest.Success(w, http.StatusNoContent, nil)
 	}
 }
 
@@ -94,14 +148,25 @@ func (handler *Handler) Login() http.HandlerFunc {
 			return
 		}
 
-		accessToken, err := handler.service.Login(request.Email, request.Password)
+		account, err := handler.service.Login(request.Email, request.Password)
 		if err != nil {
 			rest.Error(w, http.StatusUnauthorized)
 			return
 		}
 
+		claims := token.AccessTokenCustomClaims{
+			Active:    account.Active,
+			AccountId: account.Id,
+		}
+
+		at, err := token.NewAccessToken(claims)
+		if err != nil {
+			rest.Error(w, http.StatusInternalServerError)
+			return
+		}
+
 		rest.Success(w, http.StatusOK, &LoginResponse{
-			accessToken,
+			at,
 		})
 	}
 }
@@ -144,19 +209,13 @@ func (handler *Handler) Reset() http.HandlerFunc {
 			return
 		}
 
-		claims, err := token.Verify(os.Getenv("RESET_TOKEN_SECRET"), request.Token)
+		t, err := token.VerifyResetToken(request.Token)
 		if err != nil {
-			rest.Error(w, http.StatusBadRequest)
+			rest.Error(w, http.StatusUnauthorized)
 			return
 		}
 
-		accountId, err := uid.FromString(claims.Subject)
-		if err != nil {
-			rest.Error(w, http.StatusBadRequest)
-			return
-		}
-
-		if err = handler.service.UpdatePassword(accountId, request.NewPassword); err != nil {
+		if err = handler.service.UpdatePassword(t.AccountId, request.NewPassword); err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
 		}

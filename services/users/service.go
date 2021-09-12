@@ -43,7 +43,7 @@ func (service *Service) UsersByIds(userIds []uid.UID) ([]User, error) {
 	return service.storage.ByIds(userIds)
 }
 
-func (service *Service) UserByAccount(accountId uid.UID) (User, error) {
+func (service *Service) UserByAccountId(accountId uid.UID) (User, error) {
 	return service.storage.ByAccountId(accountId)
 }
 

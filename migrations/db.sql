@@ -11,13 +11,6 @@ CREATE TABLE IF NOT EXISTS accounts
     deleted_at    timestamp
 );
 
-DROP TABLE IF EXISTS accounts_activations;
-CREATE TABLE IF NOT EXISTS accounts_activations
-(
-    account_uuid    uuid      NOT NULL PRIMARY KEY,
-    activation_code integer   NOT NULL,
-    created_at      timestamp NOT NULL default current_timestamp
-);
 
 /*USERS*/
 DROP TABLE IF EXISTS users;

@@ -37,6 +37,7 @@
 35. function comments
 36. prevent time attacks @ login / register and any account related stuff
 37. email lower case
+38. try using different JWTs across different endpoints
 
 # Features
 

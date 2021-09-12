@@ -1,82 +1,76 @@
 package account
 
 import (
-	"os"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 
-	"atraf-server/pkg/token"
 	"atraf-server/pkg/uid"
-)
-
-const (
-	AccessTokenValidFor = time.Minute * 15
-	ResetTokenValidFor  = time.Minute * 5
 )
 
 type Account struct {
 	Id           uid.UID   `json:"-"`
 	Email        string    `json:"-"`
 	PasswordHash []byte    `json:"-"`
+	Active       bool      `json:"-"`
 	CreatedAt    time.Time `json:"-"`
 	UpdatedAt    time.Time `json:"-"`
 }
 
 type Storage interface {
-	ById(accountId uid.UID) (Account, error)
+	ByAccountId(accountId uid.UID) (Account, error)
 	ByEmail(email string) (Account, error)
-	Insert(email string, passwordHash []byte) (uid.UID, int, error)
+	NewAccount(email string, passwordHash []byte) (Account, error)
 	UpdatePassword(accountId uid.UID, passwordHash []byte) error
+	UpdateStatus(accountId uid.UID, active bool) error
 }
 
 type Service struct {
 	storage Storage
 }
 
-func (service *Service) Register(email string, password string) (uid.UID, error) {
-	var accountId uid.UID
-
+func (service *Service) Register(email string, password string) (Account, error) {
 	passwordHash, err := service.newPasswordHash(password)
 	if err != nil {
-		return accountId, err
+		return Account{}, err
 	}
 
-	accountId, code, err := service.storage.Insert(email, passwordHash)
+	account, err := service.storage.NewAccount(email, passwordHash)
 	if err != nil {
-		return accountId, err
+		return Account{}, err
 	}
 
-	if err = ActivationEmail(email, code); err != nil {
-		return accountId, err
+	if err = SendActivationMail(account); err != nil {
+		return Account{}, err
 	}
 
-	return accountId, nil
+	return account, nil
 }
 
-func (service *Service) Login(email string, password string) (string, error) {
+func (service *Service) Activate(accountId uid.UID) error {
+	return service.storage.UpdateStatus(accountId, true)
+}
+
+func (service *Service) ResendActivation(accountId uid.UID) error {
+	account, err := service.storage.ByAccountId(accountId)
+	if err != nil {
+		return err
+	}
+
+	return SendActivationMail(account)
+}
+
+func (service *Service) Login(email string, password string) (Account, error) {
 	account, err := service.storage.ByEmail(email)
 	if err != nil {
-		return "", err
+		return Account{}, err
 	}
 
 	if err = service.comparePasswordHash(password, account.PasswordHash); err != nil {
-		return "", err
+		return Account{}, err
 	}
 
-	claims := token.Claims{
-		Subject:   account.Id.String(),
-		IssuedAt:  time.Now().Unix(),
-		ExpiresAt: time.Now().Add(AccessTokenValidFor).Unix(),
-	}
-
-	secret := os.Getenv("ACCESS_TOKEN_SECRET")
-	accessToken, err := token.New(secret, claims)
-	if err != nil {
-		return "", err
-	}
-
-	return accessToken, nil
+	return account, nil
 }
 
 func (service *Service) Forgot(email string) error {
@@ -85,19 +79,7 @@ func (service *Service) Forgot(email string) error {
 		return err
 	}
 
-	claims := token.Claims{
-		Subject:   account.Id.String(),
-		IssuedAt:  time.Now().Unix(),
-		ExpiresAt: time.Now().Add(ResetTokenValidFor).Unix(),
-	}
-
-	secret := os.Getenv("RESET_TOKEN_SECRET")
-	resetToken, err := token.New(secret, claims)
-	if err != nil {
-		return err
-	}
-
-	if err = PasswordResetMail(account.Email, resetToken); err != nil {
+	if err = SendPasswordResetMail(account); err != nil {
 		return err
 	}
 
@@ -105,7 +87,7 @@ func (service *Service) Forgot(email string) error {
 }
 
 func (service *Service) UpdatePassword(accountId uid.UID, password string) error {
-	account, err := service.storage.ById(accountId)
+	account, err := service.storage.ByAccountId(accountId)
 	if err != nil {
 		return err
 	}
@@ -119,7 +101,7 @@ func (service *Service) UpdatePassword(accountId uid.UID, password string) error
 		return err
 	}
 
-	if err = PasswordNotification(account.Email); err != nil {
+	if err = SendPasswordNotificationEmail(account.Email); err != nil {
 		return err
 	}
 

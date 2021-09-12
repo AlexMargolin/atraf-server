@@ -54,25 +54,29 @@ func main() {
 		router.Post("/account/register", accountHandler.Register(usersService))
 		router.Post("/account/login", accountHandler.Login())
 		router.Post("/account/forgot", accountHandler.Forgot())
-		router.Post("/account/reset", accountHandler.Reset())
+		router.Patch("/account/reset", accountHandler.Reset())
 	})
 
 	// Authenticated Routes (Private)
 	// Routes defined under this group have access to the Session Context
 	router.Group(func(router chi.Router) {
-		router.Use(middleware.Session(usersService))
+		router.Use(middleware.Session())
+
+		// Accounts
+		router.Post("/account/activate", accountHandler.Activate())
+		router.Post("/account/activate/resend", accountHandler.Resend())
 
 		// Users
 		router.Get("/users/{user_id}", usersHandler.ReadOne())
 
 		// Posts
-		router.Post("/posts", postsHandler.Create())
+		router.Post("/posts", postsHandler.Create(usersService))
 		router.Put("/posts/{post_id}", postsHandler.Update())
 		router.Get("/posts/{post_id}", postsHandler.ReadOne(usersService))
 		router.With(middleware.Pagination).Get("/posts", postsHandler.ReadMany(usersService))
 
 		// Comments
-		router.Post("/comments", commentsHandler.Create())
+		router.Post("/comments", commentsHandler.Create(usersService))
 		router.Get("/comments/{source_id}", commentsHandler.ReadMany(usersService))
 		router.Put("/comments/{comment_id}", commentsHandler.Update())
 	})

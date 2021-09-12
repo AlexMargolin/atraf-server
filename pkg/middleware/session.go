@@ -3,12 +3,10 @@ package middleware
 import (
 	"context"
 	"net/http"
-	"os"
 
 	"atraf-server/pkg/rest"
 	"atraf-server/pkg/token"
 	"atraf-server/pkg/uid"
-	"atraf-server/services/users"
 )
 
 type sessionContextKey string
@@ -20,10 +18,9 @@ const (
 
 type SessionContext struct {
 	AccountId uid.UID
-	UserId    uid.UID
 }
 
-func Session(u *users.Service) func(http.Handler) http.Handler {
+func Session() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			unverifiedToken, err := token.FromHeader(r, AuthTokenHeader)
@@ -32,29 +29,20 @@ func Session(u *users.Service) func(http.Handler) http.Handler {
 				return
 			}
 
-			claims, err := token.Verify(os.Getenv("ACCESS_TOKEN_SECRET"), unverifiedToken)
+			claims, err := token.VerifyAccessToken(unverifiedToken)
 			if err != nil {
 				rest.Error(w, http.StatusUnauthorized)
 				return
 			}
 
-			accountId, err := uid.FromString(claims.Subject)
-			if err != nil {
-				rest.Error(w, http.StatusInternalServerError)
-				return
-			}
-
-			// Dependency(Users)
-			__user, err := u.UserByAccount(accountId)
-			if err != nil {
+			if claims.Active == false {
 				rest.Error(w, http.StatusUnauthorized)
 				return
 			}
 
 			ctx := context.WithValue(r.Context(), SessionContextKey, &SessionContext{
-				accountId,
-				__user.Id},
-			)
+				claims.AccountId,
+			})
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

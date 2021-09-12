@@ -37,7 +37,7 @@ type Handler struct {
 	validate *validate.Validate
 }
 
-func (handler *Handler) Create() http.HandlerFunc {
+func (handler *Handler) Create(u *users.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request CreateRequest
 		session := middleware.GetSessionContext(r)
@@ -52,7 +52,14 @@ func (handler *Handler) Create() http.HandlerFunc {
 			return
 		}
 
-		postId, err := handler.service.NewPost(session.UserId, request)
+		// Dependency(Users)
+		user, err := u.UserByAccountId(session.AccountId)
+		if err != nil {
+			rest.Error(w, http.StatusBadRequest)
+			return
+		}
+
+		postId, err := handler.service.NewPost(user.Id, request)
 		if err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return

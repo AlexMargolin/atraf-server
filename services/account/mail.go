@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"atraf-server/pkg/mailer"
+	"atraf-server/pkg/token"
 )
 
 const (
@@ -14,54 +15,57 @@ const (
 	PasswordResetTemplate  = "templates/password-reset.html"
 )
 
-func ActivationEmail(to string, code int) error {
-	type ActivationData struct {
-		Code int
-	}
-
-	subject := "Account Activation Code"
-
-	from := mail.Address{
-		Name:    "Atraf Support",
-		Address: "support@atraf.app",
-	}
-
-	data := &ActivationData{
-		code,
-	}
-
-	return mailer.FromTemplate(ActivationTemplate, data, subject, from, []string{to})
+var from = mail.Address{
+	Name:    "Atraf Accounts",
+	Address: "support@atraf.app",
 }
 
-func PasswordResetMail(to string, resetToken string) error {
-	type PasswordResetData struct {
+func SendActivationMail(account Account) error {
+	type Data struct {
+		ActivationURL string
+		Duration      float64
+	}
+
+	activationToken, err := token.NewActivationToken(token.ActivationTokensCustomClaims{
+		AccountId: account.Id,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%s/reset/%s", os.Getenv("CLIENT_URL"), activationToken)
+	data := &Data{
+		url,
+		token.ActivationTokenValidFor.Minutes(),
+	}
+
+	return mailer.FromTemplate(ActivationTemplate, data, "New Account Activation", from, []string{account.Email})
+}
+
+func SendPasswordResetMail(account Account) error {
+	type Data struct {
 		ResetURL string
 		Duration float64
 	}
 
-	subject := "Password Reset Request"
+	resetToken, err := token.NewResetToken(token.ResetTokensCustomClaims{
+		AccountId: account.Id,
+	})
 
-	from := mail.Address{
-		Name:    "Atraf Support",
-		Address: "support@atraf.app",
+	if err != nil {
+		return err
 	}
 
 	url := fmt.Sprintf("%s/reset/%s", os.Getenv("CLIENT_URL"), resetToken)
-	data := &PasswordResetData{
+	data := &Data{
 		url,
-		ResetTokenValidFor.Minutes(),
+		token.ResetTokenValidFor.Minutes(),
 	}
 
-	return mailer.FromTemplate(PasswordResetTemplate, data, subject, from, []string{to})
+	return mailer.FromTemplate(PasswordResetTemplate, data, "Password Reset Request", from, []string{account.Email})
 }
 
-func PasswordNotification(to string) error {
-	subject := "Account password was reset"
-
-	from := mail.Address{
-		Name:    "Atraf Support",
-		Address: "support@atraf.app",
-	}
-
-	return mailer.FromTemplate(PasswordChangeTemplate, nil, subject, from, []string{to})
+func SendPasswordNotificationEmail(to string) error {
+	return mailer.FromTemplate(PasswordChangeTemplate, nil, "Account password was reset", from, []string{to})
 }
