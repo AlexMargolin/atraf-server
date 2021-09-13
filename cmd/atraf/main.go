@@ -58,7 +58,7 @@ func main() {
 
 	// Private Routes (unverified users)
 	router.Group(func(router chi.Router) {
-		router.Use(middleware.Session(false))
+		router.Use(middleware.Authenticate(false))
 
 		// Account
 		router.Patch("/account/activate", accountHandler.Activate())
@@ -66,7 +66,7 @@ func main() {
 
 	// Private Routes (verified users)
 	router.Group(func(router chi.Router) {
-		router.Use(middleware.Session(true))
+		router.Use(middleware.Authenticate(true))
 
 		// Users
 		router.Get("/users/{user_id}", usersHandler.ReadOne())

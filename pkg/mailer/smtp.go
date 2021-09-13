@@ -21,7 +21,7 @@ func FromTemplate(filename string, data interface{}, subject string, from mail.A
 	var message bytes.Buffer
 	headers := make(map[string]string)
 
-	config := &SMTPConfig{
+	config := SMTPConfig{
 		Host: os.Getenv("SMTP_HOST"),
 		Port: os.Getenv("SMTP_PORT"),
 		User: os.Getenv("SMTP_USER"),

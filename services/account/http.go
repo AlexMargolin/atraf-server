@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"atraf-server/pkg/middleware"
+	"atraf-server/pkg/session"
 	"atraf-server/pkg/token"
 	"atraf-server/services/users"
 
@@ -17,25 +18,13 @@ type RegisterRequest struct {
 	Password string `json:"password" validate:"required"`
 }
 
-type RegisterResponse struct {
-	AccessToken string `json:"access_token"`
-}
-
 type ActivateRequest struct {
 	Code string `json:"code" validate:"required"`
-}
-
-type ActivateResponse struct {
-	AccessToken string `json:"access_token"`
 }
 
 type LoginRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
-}
-
-type LoginResponse struct {
-	AccessToken string `json:"access_token"`
 }
 
 type ForgotRequest struct {
@@ -73,31 +62,25 @@ func (handler *Handler) Register(u *users.Service) http.HandlerFunc {
 		}
 
 		// Dependency(Users)
-		// TODO this should in storage as a transaction? and then the mail won't be sent as well :)
+		// TODO should be part of a transaction?
 		if u.NewUser(account.Id, users.UserFields{Email: account.Email}) != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
 		}
 
-		accessToken, err := token.NewAccessToken(token.AccessTokenCustomClaims{
-			Active:    false,
-			AccountId: account.Id,
-		})
-		if err != nil {
+		if err = session.SetCookie(w, account.Id, account.Active); err != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
 		}
 
-		rest.Success(w, http.StatusCreated, &RegisterResponse{
-			accessToken,
-		})
+		rest.Success(w, http.StatusNoContent, nil)
 	}
 }
 
 func (handler *Handler) Activate() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request ActivateRequest
-		session := middleware.GetSessionContext(r)
+		auth := middleware.GetAuthContext(r)
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 			rest.Error(w, http.StatusUnsupportedMediaType)
@@ -109,24 +92,18 @@ func (handler *Handler) Activate() http.HandlerFunc {
 			return
 		}
 
-		if err := handler.service.Activate(session.AccountId, request.Code); err != nil {
+		if err := handler.service.Activate(auth.AccountId, request.Code); err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
 		}
 
 		// Issue New Access Token
-		accessToken, err := token.NewAccessToken(token.AccessTokenCustomClaims{
-			Active:    true,
-			AccountId: session.AccountId,
-		})
-		if err != nil {
+		if err := session.SetCookie(w, auth.AccountId, true); err != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
 		}
 
-		rest.Success(w, http.StatusOK, &ActivateResponse{
-			AccessToken: accessToken,
-		})
+		rest.Success(w, http.StatusNoContent, nil)
 	}
 }
 
@@ -150,19 +127,12 @@ func (handler *Handler) Login() http.HandlerFunc {
 			return
 		}
 
-		// Issue Access Token
-		accessToken, err := token.NewAccessToken(token.AccessTokenCustomClaims{
-			Active:    account.Active,
-			AccountId: account.Id,
-		})
-		if err != nil {
+		if err = session.SetCookie(w, account.Id, account.Active); err != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
 		}
 
-		rest.Success(w, http.StatusOK, &LoginResponse{
-			accessToken,
-		})
+		rest.Success(w, http.StatusNoContent, nil)
 	}
 }
 

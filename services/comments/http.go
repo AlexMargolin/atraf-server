@@ -38,7 +38,7 @@ type Handler struct {
 func (handler *Handler) Create(u *users.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request CreateRequest
-		session := middleware.GetSessionContext(r)
+		auth := middleware.GetAuthContext(r)
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 			rest.Error(w, http.StatusUnsupportedMediaType)
@@ -51,7 +51,7 @@ func (handler *Handler) Create(u *users.Service) http.HandlerFunc {
 		}
 
 		// Dependency(Users)
-		user, err := u.UserByAccountId(session.AccountId)
+		user, err := u.UserByAccountId(auth.AccountId)
 		if err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
