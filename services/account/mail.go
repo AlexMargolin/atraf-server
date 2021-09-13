@@ -20,27 +20,9 @@ var from = mail.Address{
 	Address: "support@atraf.app",
 }
 
-func SendActivationMail(account Account) error {
-	type Data struct {
-		ActivationURL string
-		Duration      float64
-	}
-
-	activationToken, err := token.NewActivationToken(token.ActivationTokensCustomClaims{
-		AccountId: account.Id,
-	})
-
-	if err != nil {
-		return err
-	}
-
-	url := fmt.Sprintf("%s/reset/%s", os.Getenv("CLIENT_URL"), activationToken)
-	data := &Data{
-		url,
-		token.ActivationTokenValidFor.Minutes(),
-	}
-
-	return mailer.FromTemplate(ActivationTemplate, data, "New Account Activation", from, []string{account.Email})
+func SendActivationMail(to string, code string) error {
+	data := struct{ Code string }{code}
+	return mailer.FromTemplate(ActivationTemplate, data, "Account Activation Code", from, []string{to})
 }
 
 func SendPasswordResetMail(account Account) error {

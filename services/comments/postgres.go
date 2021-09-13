@@ -29,19 +29,7 @@ type Postgres struct {
 func (postgres *Postgres) Many(sourceId uid.UID) ([]Comment, error) {
 	var comments []PostgresComment
 
-	query := `
-	SELECT uuid,
-	       user_uuid,
-	       source_uuid,
-	       parent_uuid,
-	       body,
-	       created_at,
-	       updated_at,
-	       deleted_at 
-	FROM comments 
-	WHERE source_uuid = $1
-	ORDER BY created_at`
-
+	query := `SELECT * FROM comments WHERE source_uuid = $1 ORDER BY created_at`
 	if err := postgres.Db.Select(&comments, query, sourceId); err != nil {
 		return nil, err
 	}
@@ -65,7 +53,7 @@ func (postgres *Postgres) Insert(userId uid.UID, sourceId uid.UID, parentId uid.
 }
 
 func (postgres *Postgres) Update(commentId uid.UID, fields CommentFields) error {
-	query := "UPDATE comments SET body = $2 WHERE uuid = $1"
+	query := `UPDATE comments SET body = $2 WHERE uuid = $1`
 	result, err := postgres.Db.Exec(query, commentId, fields.Body)
 	if err != nil {
 		return err

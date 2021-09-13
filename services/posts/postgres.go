@@ -29,11 +29,7 @@ type Postgres struct {
 func (postgres Postgres) One(postId uid.UID) (Post, error) {
 	var post PostgresPost
 
-	query := `
-	SELECT uuid, user_uuid, title, body, created_at, updated_at, deleted_at 
-	FROM posts 
-	WHERE uuid = $1 
-	LIMIT 1`
+	query := `SELECT * FROM posts WHERE uuid = $1 LIMIT 1`
 
 	// Returns an error when no results are found.
 	if err := postgres.Db.Get(&post, query, postId); err != nil {
@@ -47,23 +43,12 @@ func (postgres Postgres) Many(p *middleware.PaginationContext) ([]Post, error) {
 	var posts []PostgresPost
 
 	if p.Cursor.Key != uid.Nil {
-		query := `
-		SELECT uuid, user_uuid, title, body, created_at, updated_at, deleted_at
-		FROM posts 
-		WHERE (created_at,uuid) < ($1 :: timestamp, $2) 
-		ORDER BY created_at DESC 
-		LIMIT $3`
-
+		query := `SELECT * FROM posts WHERE (created_at, uuid) < ($1 :: timestamp, $2) ORDER BY created_at DESC LIMIT $3`
 		if err := postgres.Db.Select(&posts, query, p.Cursor.Value, p.Cursor.Key, p.Limit); err != nil {
 			return nil, err
 		}
 	} else {
-		query := `
-		SELECT uuid, user_uuid, title, body, created_at, updated_at, deleted_at 
-		FROM posts 
-		ORDER BY created_at DESC 
-		LIMIT $1`
-
+		query := `SELECT * FROM posts ORDER BY created_at DESC LIMIT $1`
 		if err := postgres.Db.Select(&posts, query, p.Limit); err != nil {
 			return nil, err
 		}
@@ -75,7 +60,7 @@ func (postgres Postgres) Many(p *middleware.PaginationContext) ([]Post, error) {
 func (postgres Postgres) Insert(userId uid.UID, fields PostFields) (uid.UID, error) {
 	var uuid uid.UID
 
-	query := "INSERT INTO posts (user_uuid, title, body) VALUES ($1, $2, $3) RETURNING uuid"
+	query := `INSERT INTO posts (user_uuid, title, body) VALUES ($1, $2, $3) RETURNING uuid`
 	if err := postgres.Db.Get(&uuid, query, userId, fields.Title, fields.Body); err != nil {
 		return uuid, err
 	}
@@ -84,7 +69,7 @@ func (postgres Postgres) Insert(userId uid.UID, fields PostFields) (uid.UID, err
 }
 
 func (postgres Postgres) Update(postId uid.UID, fields PostFields) error {
-	query := "UPDATE posts SET title = $2, body = $3 WHERE uuid = $1"
+	query := `UPDATE posts SET title = $2, body = $3 WHERE uuid = $1`
 	result, err := postgres.Db.Exec(query, postId, fields.Title, fields.Body)
 	if err != nil {
 		return err

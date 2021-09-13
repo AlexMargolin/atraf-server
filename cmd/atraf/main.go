@@ -47,8 +47,7 @@ func main() {
 	router.Use(middleware.Cors)
 	router.Use(middleware.Options)
 
-	// Unauthenticated Routes (Public)
-	// Routes defined under this group do not have access to the Session Context
+	// Public Routes
 	router.Group(func(router chi.Router) {
 		// Account
 		router.Post("/account/register", accountHandler.Register(usersService))
@@ -57,18 +56,15 @@ func main() {
 		router.Patch("/account/reset", accountHandler.Reset())
 	})
 
-	// Authenticated Inactive Account Routes (Private)
-	// Routes defined under this group have access to the Session Context
+	// Private Routes (unverified users)
 	router.Group(func(router chi.Router) {
 		router.Use(middleware.Session(false))
 
 		// Account
-		router.Post("/account/activate", accountHandler.Activate())
-		router.Post("/account/activate/resend", accountHandler.Resend())
+		router.Patch("/account/activate", accountHandler.Activate())
 	})
 
-	// Authenticated Active Account Routes (Private)
-	// Routes defined under this group have access to the Session Context
+	// Private Routes (verified users)
 	router.Group(func(router chi.Router) {
 		router.Use(middleware.Session(true))
 

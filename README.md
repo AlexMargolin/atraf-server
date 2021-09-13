@@ -38,6 +38,8 @@
 36. prevent time attacks @ login / register and any account related stuff
 37. email lower case
 38. try using different JWTs across different endpoints
+39. move users creation dependency to postgres and add transaction
+40. validate update queries when not found
 
 # Features
 

@@ -1,8 +1,6 @@
 package account
 
 import (
-	"errors"
-	"fmt"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -11,20 +9,22 @@ import (
 )
 
 type Account struct {
-	Id           uid.UID   `json:"-"`
-	Email        string    `json:"-"`
-	PasswordHash []byte    `json:"-"`
-	Active       bool      `json:"-"`
-	CreatedAt    time.Time `json:"-"`
-	UpdatedAt    time.Time `json:"-"`
+	Id             uid.UID   `json:"-"`
+	Email          string    `json:"-"`
+	PasswordHash   []byte    `json:"-"`
+	ActivationCode string    `json:"-"`
+	Active         bool      `json:"-"`
+	CreatedAt      time.Time `json:"-"`
+	UpdatedAt      time.Time `json:"-"`
 }
 
 type Storage interface {
-	ByAccountId(accountId uid.UID) (Account, error)
-	ByEmail(email string) (Account, error)
 	NewAccount(email string, passwordHash []byte) (Account, error)
+	ByEmail(email string) (Account, error)
+	ByAccountId(accountId uid.UID) (Account, error)
+	SetPending(accountId uid.UID) (string, error)
+	SetActive(accountId uid.UID, activationCode string) error
 	UpdatePassword(accountId uid.UID, passwordHash []byte) error
-	UpdateStatus(accountId uid.UID, active bool) error
 }
 
 type Service struct {
@@ -42,37 +42,11 @@ func (service *Service) Register(email string, password string) (Account, error)
 		return Account{}, err
 	}
 
-	if err = SendActivationMail(account); err != nil {
+	if err = SendActivationMail(account.Email, account.ActivationCode); err != nil {
 		return Account{}, err
 	}
 
 	return account, nil
-}
-
-func (service *Service) Activate(accountId uid.UID) error {
-	account, err := service.storage.ByAccountId(accountId)
-	if err != nil {
-		return err
-	}
-
-	if account.Active {
-		return errors.New(fmt.Sprintf("account [%s] is already active", account.Id))
-	}
-
-	return service.storage.UpdateStatus(accountId, true)
-}
-
-func (service *Service) ResendActivation(accountId uid.UID) error {
-	account, err := service.storage.ByAccountId(accountId)
-	if err != nil {
-		return err
-	}
-
-	if account.Active {
-		return errors.New(fmt.Sprintf("account [%s] is already active", account.Id))
-	}
-
-	return SendActivationMail(account)
 }
 
 func (service *Service) Login(email string, password string) (Account, error) {
@@ -97,13 +71,21 @@ func (service *Service) Forgot(email string) error {
 	return SendPasswordResetMail(account)
 }
 
+func (service *Service) Activate(accountId uid.UID, activationCode string) error {
+	return service.storage.SetActive(accountId, activationCode)
+}
+
+func (service *Service) Pending(accountId uid.UID) (string, error) {
+	return service.storage.SetPending(accountId)
+}
+
 func (service *Service) UpdatePassword(accountId uid.UID, password string) error {
-	account, err := service.storage.ByAccountId(accountId)
+	passwordHash, err := service.newPasswordHash(password)
 	if err != nil {
 		return err
 	}
 
-	passwordHash, err := service.newPasswordHash(password)
+	account, err := service.storage.ByAccountId(accountId)
 	if err != nil {
 		return err
 	}

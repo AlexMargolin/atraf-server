@@ -17,8 +17,12 @@ type RegisterRequest struct {
 	Password string `json:"password" validate:"required"`
 }
 
+type RegisterResponse struct {
+	AccessToken string `json:"access_token"`
+}
+
 type ActivateRequest struct {
-	Token string `json:"token" validate:"required"`
+	Code string `json:"code" validate:"required"`
 }
 
 type ActivateResponse struct {
@@ -69,21 +73,31 @@ func (handler *Handler) Register(u *users.Service) http.HandlerFunc {
 		}
 
 		// Dependency(Users)
-		err = u.NewUser(account.Id, users.UserFields{
-			Email: account.Email,
+		// TODO this should in storage as a transaction? and then the mail won't be sent as well :)
+		if u.NewUser(account.Id, users.UserFields{Email: account.Email}) != nil {
+			rest.Error(w, http.StatusInternalServerError)
+			return
+		}
+
+		accessToken, err := token.NewAccessToken(token.AccessTokenCustomClaims{
+			Active:    false,
+			AccountId: account.Id,
 		})
 		if err != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
 		}
 
-		rest.Success(w, http.StatusCreated, nil)
+		rest.Success(w, http.StatusCreated, &RegisterResponse{
+			accessToken,
+		})
 	}
 }
 
 func (handler *Handler) Activate() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request ActivateRequest
+		session := middleware.GetSessionContext(r)
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 			rest.Error(w, http.StatusUnsupportedMediaType)
@@ -95,21 +109,15 @@ func (handler *Handler) Activate() http.HandlerFunc {
 			return
 		}
 
-		t, err := token.VerifyActivationToken(request.Token)
-		if err != nil {
-			rest.Error(w, http.StatusUnauthorized)
-			return
-		}
-
-		if err = handler.service.Activate(t.AccountId); err != nil {
+		if err := handler.service.Activate(session.AccountId, request.Code); err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
 		}
 
-		// Issue new access token
-		at, err := token.NewAccessToken(token.AccessTokenCustomClaims{
+		// Issue New Access Token
+		accessToken, err := token.NewAccessToken(token.AccessTokenCustomClaims{
 			Active:    true,
-			AccountId: t.AccountId,
+			AccountId: session.AccountId,
 		})
 		if err != nil {
 			rest.Error(w, http.StatusInternalServerError)
@@ -117,21 +125,8 @@ func (handler *Handler) Activate() http.HandlerFunc {
 		}
 
 		rest.Success(w, http.StatusOK, &ActivateResponse{
-			at,
+			AccessToken: accessToken,
 		})
-	}
-}
-
-func (handler *Handler) Resend() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		session := middleware.GetSessionContext(r)
-
-		if err := handler.service.ResendActivation(session.AccountId); err != nil {
-			rest.Error(w, http.StatusBadRequest)
-			return
-		}
-
-		rest.Success(w, http.StatusNoContent, nil)
 	}
 }
 
@@ -156,7 +151,7 @@ func (handler *Handler) Login() http.HandlerFunc {
 		}
 
 		// Issue Access Token
-		at, err := token.NewAccessToken(token.AccessTokenCustomClaims{
+		accessToken, err := token.NewAccessToken(token.AccessTokenCustomClaims{
 			Active:    account.Active,
 			AccountId: account.Id,
 		})
@@ -166,7 +161,7 @@ func (handler *Handler) Login() http.HandlerFunc {
 		}
 
 		rest.Success(w, http.StatusOK, &LoginResponse{
-			at,
+			accessToken,
 		})
 	}
 }

@@ -11,13 +11,14 @@ import (
 )
 
 type PostgresAccount struct {
-	Uuid         uid.UID      `db:"uuid"`
-	Email        string       `db:"email"`
-	PasswordHash []byte       `db:"password_hash"`
-	Active       bool         `db:"active"`
-	CreatedAt    time.Time    `db:"created_at"`
-	UpdatedAt    sql.NullTime `db:"updated_at"`
-	DeletedAt    sql.NullTime `db:"deleted_at"`
+	Uuid           uid.UID        `db:"uuid"`
+	Email          string         `db:"email"`
+	PasswordHash   []byte         `db:"password_hash"`
+	Active         bool           `db:"active"`
+	ActivationCode sql.NullString `db:"activation_code"`
+	CreatedAt      time.Time      `db:"created_at"`
+	UpdatedAt      sql.NullTime   `db:"updated_at"`
+	DeletedAt      sql.NullTime   `db:"deleted_at"`
 }
 
 type Postgres struct {
@@ -27,7 +28,7 @@ type Postgres struct {
 func (postgres *Postgres) NewAccount(email string, passwordHash []byte) (Account, error) {
 	var account PostgresAccount
 
-	query := "INSERT INTO accounts (email, password_hash) VALUES ($1, $2) RETURNING *"
+	query := `INSERT INTO accounts (email, password_hash) VALUES ($1, $2) RETURNING *`
 	if err := postgres.Db.Get(&account, query, email, passwordHash); err != nil {
 		return Account{}, err
 	}
@@ -35,10 +36,54 @@ func (postgres *Postgres) NewAccount(email string, passwordHash []byte) (Account
 	return prepareOne(account), nil
 }
 
+// SetPending deactivates the account and returns a new activation code
+// which later, is supplied to the SetActive method.
+func (postgres *Postgres) SetPending(accountId uid.UID) (string, error) {
+	var code string
+
+	query := `
+	UPDATE accounts 
+	SET active = false, 
+	    activation_code = DEFAULT
+	WHERE uuid = $1
+	RETURNING activation_code`
+
+	if err := postgres.Db.Get(&code, query, accountId); err != nil {
+		return code, err
+	}
+
+	return code, nil
+}
+
+func (postgres *Postgres) SetActive(accountId uid.UID, activationCode string) error {
+	query := `
+	UPDATE accounts 
+	SET active = true, 
+	    activation_code = NULL
+	WHERE uuid = $1 
+	  AND activation_code = $2`
+
+	result, err := postgres.Db.Exec(query, accountId, activationCode)
+	if err != nil {
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return errors.New("account couldn't be activated")
+	}
+
+	return nil
+}
+
 func (postgres *Postgres) ByAccountId(accountId uid.UID) (Account, error) {
 	var account PostgresAccount
 
-	query := "SELECT * FROM accounts WHERE uuid = $1 LIMIT 1"
+	query := `SELECT * FROM accounts WHERE uuid = $1 LIMIT 1`
 	if err := postgres.Db.Get(&account, query, accountId); err != nil {
 		return Account{}, err
 	}
@@ -49,7 +94,7 @@ func (postgres *Postgres) ByAccountId(accountId uid.UID) (Account, error) {
 func (postgres *Postgres) ByEmail(email string) (Account, error) {
 	var account PostgresAccount
 
-	query := "SELECT * FROM accounts WHERE email = $1 LIMIT 1"
+	query := `SELECT * FROM accounts WHERE email = $1 LIMIT 1`
 	if err := postgres.Db.Get(&account, query, email); err != nil {
 		return Account{}, err
 	}
@@ -58,7 +103,7 @@ func (postgres *Postgres) ByEmail(email string) (Account, error) {
 }
 
 func (postgres *Postgres) UpdatePassword(accountId uid.UID, passwordHash []byte) error {
-	query := "UPDATE accounts SET password_hash = $2 WHERE uuid = $1"
+	query := `UPDATE accounts SET password_hash = $2 WHERE uuid = $1`
 
 	result, err := postgres.Db.Exec(query, accountId, passwordHash)
 	if err != nil {
@@ -77,34 +122,15 @@ func (postgres *Postgres) UpdatePassword(accountId uid.UID, passwordHash []byte)
 	return nil
 }
 
-func (postgres *Postgres) UpdateStatus(accountId uid.UID, active bool) error {
-	query := "UPDATE accounts SET active = $2 WHERE uuid = $1"
-
-	result, err := postgres.Db.Exec(query, accountId, active)
-	if err != nil {
-		return err
-	}
-
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rows == 0 {
-		return errors.New("status couldn't be updated")
-	}
-
-	return nil
-}
-
 func prepareOne(pa PostgresAccount) Account {
 	return Account{
-		Id:           pa.Uuid,
-		Email:        pa.Email,
-		PasswordHash: pa.PasswordHash,
-		Active:       pa.Active,
-		CreatedAt:    pa.CreatedAt,
-		UpdatedAt:    pa.UpdatedAt.Time,
+		Id:             pa.Uuid,
+		Email:          pa.Email,
+		PasswordHash:   pa.PasswordHash,
+		Active:         pa.Active,
+		ActivationCode: pa.ActivationCode.String,
+		CreatedAt:      pa.CreatedAt,
+		UpdatedAt:      pa.UpdatedAt.Time,
 	}
 }
 
