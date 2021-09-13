@@ -35,7 +35,7 @@ func Session(active bool) func(http.Handler) http.Handler {
 				return
 			}
 
-			if active && claims.Active == false {
+			if active != claims.Active {
 				rest.Error(w, http.StatusUnauthorized)
 				return
 			}

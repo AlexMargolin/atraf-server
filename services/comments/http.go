@@ -100,6 +100,7 @@ func (handler *Handler) Update() http.HandlerFunc {
 
 func (handler *Handler) ReadMany(u *users.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
 		sourceId, err := uid.FromString(chi.URLParam(r, "source_id"))
 		if err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity)
@@ -113,7 +114,10 @@ func (handler *Handler) ReadMany(u *users.Service) http.HandlerFunc {
 		}
 
 		if len(comments) == 0 {
-			rest.Error(w, http.StatusNotFound)
+			rest.Success(w, http.StatusOK, &ReadManyResponse{
+				[]Comment{},
+				[]users.User{},
+			})
 			return
 		}
 
