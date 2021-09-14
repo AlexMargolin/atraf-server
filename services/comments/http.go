@@ -20,7 +20,7 @@ type CreateRequest struct {
 }
 
 type CreateResponse struct {
-	CommentId uid.UID `json:"comment_id"`
+	Comment Comment `json:"comment"`
 }
 
 type UpdateRequest = CommentFields
@@ -57,14 +57,14 @@ func (handler *Handler) Create(u *users.Service) http.HandlerFunc {
 			return
 		}
 
-		commentId, err := handler.service.NewComment(user.Id, request.SourceId, request.ParentId, request.CommentFields)
+		comment, err := handler.service.NewComment(user.Id, request.SourceId, request.ParentId, request.CommentFields)
 		if err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
 		}
 
 		rest.Success(w, http.StatusCreated, &CreateResponse{
-			commentId,
+			comment,
 		})
 	}
 }

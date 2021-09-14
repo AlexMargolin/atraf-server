@@ -37,19 +37,19 @@ func (postgres *Postgres) Many(sourceId uid.UID) ([]Comment, error) {
 	return prepareMany(comments), nil
 }
 
-func (postgres *Postgres) Insert(userId uid.UID, sourceId uid.UID, parentId uid.UID, fields CommentFields) (uid.UID, error) {
-	var uuid uid.UID
+func (postgres *Postgres) Insert(userId uid.UID, sourceId uid.UID, parentId uid.UID, fields CommentFields) (Comment, error) {
+	var comment PostgresComment
 
 	query := `
 	INSERT INTO comments (user_uuid, source_uuid, parent_uuid, body) 
 	VALUES ($1, $2, $3, $4) 
-	RETURNING uuid`
+	RETURNING *`
 
-	if err := postgres.Db.Get(&uuid, query, userId, sourceId, parentId, fields.Body); err != nil {
-		return uuid, err
+	if err := postgres.Db.Get(&comment, query, userId, sourceId, parentId, fields.Body); err != nil {
+		return Comment{}, err
 	}
 
-	return uuid, nil
+	return prepareOne(comment), nil
 }
 
 func (postgres *Postgres) Update(commentId uid.UID, fields CommentFields) error {

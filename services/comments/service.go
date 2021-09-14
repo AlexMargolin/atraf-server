@@ -24,15 +24,15 @@ type CommentFields struct {
 
 type Storage interface {
 	Many(sourceId uid.UID) ([]Comment, error)
+	Insert(userId uid.UID, sourceId uid.UID, parentId uid.UID, fields CommentFields) (Comment, error)
 	Update(commentId uid.UID, fields CommentFields) error
-	Insert(userId uid.UID, sourceId uid.UID, parentId uid.UID, fields CommentFields) (uid.UID, error)
 }
 
 type Service struct {
 	storage Storage
 }
 
-func (service *Service) NewComment(userId uid.UID, sourceId uid.UID, parentId uid.UID, fields CommentFields) (uid.UID, error) {
+func (service *Service) NewComment(userId uid.UID, sourceId uid.UID, parentId uid.UID, fields CommentFields) (Comment, error) {
 	return service.storage.Insert(userId, sourceId, parentId, fields)
 }
 
