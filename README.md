@@ -40,6 +40,8 @@
 38. try using different JWTs across different endpoints
 39. move users creation dependency to postgres and add transaction
 40. validate update queries when not found
+41. replace jwt calims with 3 letters (in the json tags)
+42. change access token duration to 10 mins
 
 # Features
 

@@ -12,7 +12,7 @@ import (
 
 const (
 	ATCookieName = "token"
-	ATValidFor   = time.Minute * 10
+	ATValidFor   = time.Minute * 100
 )
 
 var secret = os.Getenv("ACCESS_TOKEN_SECRET")
