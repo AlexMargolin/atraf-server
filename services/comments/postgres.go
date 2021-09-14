@@ -29,7 +29,7 @@ type Postgres struct {
 func (postgres *Postgres) Many(sourceId uid.UID) ([]Comment, error) {
 	var comments []PostgresComment
 
-	query := `SELECT * FROM comments WHERE source_uuid = $1 ORDER BY created_at`
+	query := `SELECT * FROM comments WHERE source_uuid = $1 ORDER BY created_at DESC`
 	if err := postgres.Db.Select(&comments, query, sourceId); err != nil {
 		return nil, err
 	}

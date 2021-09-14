@@ -57,5 +57,5 @@ CREATE TABLE IF NOT EXISTS comments
     updated_at  timestamp,
     deleted_at  timestamp
 );
-DROP INDEX IF EXISTS posts_created_at_idx;
-CREATE INDEX posts_created_at_idx ON comments (created_at DESC);
+DROP INDEX IF EXISTS comments_created_at_idx;
+CREATE INDEX comments_created_at_idx ON comments (created_at DESC);
