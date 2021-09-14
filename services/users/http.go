@@ -10,10 +10,6 @@ import (
 	"atraf-server/pkg/validate"
 )
 
-type CreateResponse struct {
-	UserId uid.UID `json:"user_id"`
-}
-
 type ReadOneResponse struct {
 	User User `json:"user"`
 }
@@ -37,7 +33,7 @@ func (handler *Handler) ReadOne() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusOK, ReadOneResponse{user})
+		rest.Success(w, http.StatusOK, &ReadOneResponse{user})
 	}
 }
 
