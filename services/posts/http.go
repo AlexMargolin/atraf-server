@@ -130,7 +130,13 @@ func (handler *Handler) ReadOne(u *users.Service) http.HandlerFunc {
 
 func (handler *Handler) ReadMany(u *users.Service) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		var cursor string
+
 		pagination := middleware.GetPaginationContext(r)
+
+		// we add additional post in order to determine if there is another
+		// page available for pagination
+		pagination.Limit++
 
 		posts, err := handler.service.ListPosts(pagination)
 		if err != nil {
@@ -143,14 +149,23 @@ func (handler *Handler) ReadMany(u *users.Service) http.HandlerFunc {
 			return
 		}
 
-		lastPost := posts[len(posts)-1]
-		cursor, err := middleware.EncodeCursor(&middleware.Cursor{
-			Key:   lastPost.Id,
-			Value: lastPost.CreatedAt,
-		})
-		if err != nil {
-			rest.Error(w, http.StatusInternalServerError)
-			return
+		// if both are equal, it means there are more posts
+		// than originally queried by the client.
+		// in which case, a pagination cursor is added to the response.
+		if len(posts) == pagination.Limit {
+			// remove the additional post from the posts result
+			posts = posts[:len(posts)-1]
+			lastPost := posts[len(posts)-1]
+
+			cursor, err = middleware.EncodeCursor(&middleware.Cursor{
+				Key:   lastPost.Id,
+				Value: lastPost.CreatedAt,
+			})
+
+			if err != nil {
+				rest.Error(w, http.StatusInternalServerError)
+				return
+			}
 		}
 
 		userIds := UniqueUserIds(posts)
