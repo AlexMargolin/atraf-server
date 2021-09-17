@@ -1,6 +1,7 @@
 package posts
 
 import (
+	"mime/multipart"
 	"time"
 
 	"atraf-server/pkg/middleware"
@@ -8,26 +9,28 @@ import (
 )
 
 type Post struct {
-	Id        uid.UID   `json:"id"`
-	UserId    uid.UID   `json:"user_id"`
-	Title     string    `json:"title"`
-	Body      string    `json:"body"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	Id         uid.UID   `json:"id"`
+	UserId     uid.UID   `json:"user_id"`
+	Title      string    `json:"title"`
+	Body       string    `json:"body"`
+	Attachment string    `json:"attachment"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 // PostFields is a struct representing all Post values
 // which can be modified by the client.
 type PostFields struct {
-	Title string `json:"title" validate:"required"`
-	Body  string `json:"body" validate:"required"`
+	Title string         `validate:"required"`
+	Body  string         `validate:"required"`
+	File  multipart.File `validate:"required"`
 }
 
 type Storage interface {
 	One(postId uid.UID) (Post, error)
 	Many(pagination *middleware.PaginationContext) ([]Post, error)
-	Insert(userId uid.UID, fields PostFields) (uid.UID, error)
-	Update(postId uid.UID, fields PostFields) error
+	Insert(userId uid.UID, fields *PostFields) (uid.UID, error)
+	Update(postId uid.UID, fields *PostFields) error
 }
 
 type Service struct {
@@ -42,11 +45,11 @@ func (service *Service) ListPosts(pagination *middleware.PaginationContext) ([]P
 	return service.storage.Many(pagination)
 }
 
-func (service *Service) NewPost(userId uid.UID, fields PostFields) (uid.UID, error) {
+func (service *Service) NewPost(userId uid.UID, fields *PostFields) (uid.UID, error) {
 	return service.storage.Insert(userId, fields)
 }
 
-func (service *Service) UpdatePost(postId uid.UID, fields PostFields) error {
+func (service *Service) UpdatePost(postId uid.UID, fields *PostFields) error {
 	return service.storage.Update(postId, fields)
 }
 

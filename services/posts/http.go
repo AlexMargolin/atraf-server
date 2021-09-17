@@ -13,6 +13,8 @@ import (
 	"atraf-server/services/users"
 )
 
+const MaxUploadSize = 10 * 1024 * 1024 // 10MB
+
 type CreateRequest = PostFields
 
 type CreateResponse struct {
@@ -34,32 +36,53 @@ type ReadManyResponse struct {
 
 type Handler struct {
 	service  *Service
+	users    *users.Service
 	validate *validate.Validate
 }
 
-func (handler *Handler) Create(u *users.Service) http.HandlerFunc {
+// Create uses FormData instead of JSON.
+// avoids the additional work required to decode base64 files
+// as well the additional request payload size.
+func (h *Handler) Create() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var request CreateRequest
 		auth := middleware.GetAuthContext(r)
 
-		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			rest.Error(w, http.StatusUnsupportedMediaType)
+		// set max request size
+		r.Body = http.MaxBytesReader(w, r.Body, MaxUploadSize)
+
+		// set max size allowed before writing to the filesystem.
+		if err := r.ParseMultipartForm(MaxUploadSize); err != nil {
+			rest.Error(w, http.StatusRequestEntityTooLarge)
 			return
 		}
+		defer r.Body.Close()
 
-		if err := handler.validate.Struct(request); err != nil {
+		file, _, err := r.FormFile("attachment")
+		if err != nil {
+			rest.Error(w, http.StatusUnprocessableEntity)
+			return
+		}
+		defer file.Close()
+
+		request := &CreateRequest{
+			Title: r.FormValue("title"),
+			Body:  r.FormValue("body"),
+			File:  file,
+		}
+
+		if err = h.validate.Struct(request); err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity)
 			return
 		}
 
 		// Dependency(Users)
-		user, err := u.UserByAccountId(auth.AccountId)
+		user, err := h.users.UserByAccountId(auth.AccountId)
 		if err != nil {
-			rest.Error(w, http.StatusBadRequest)
+			rest.Error(w, http.StatusInternalServerError)
 			return
 		}
 
-		postId, err := handler.service.NewPost(user.Id, request)
+		postId, err := h.service.NewPost(user.Id, request)
 		if err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
@@ -71,7 +94,7 @@ func (handler *Handler) Create(u *users.Service) http.HandlerFunc {
 	}
 }
 
-func (handler *Handler) Update() http.HandlerFunc {
+func (h *Handler) Update() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request UpdateRequest
 
@@ -86,12 +109,12 @@ func (handler *Handler) Update() http.HandlerFunc {
 			return
 		}
 
-		if err = handler.validate.Struct(request); err != nil {
+		if err = h.validate.Struct(request); err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity)
 			return
 		}
 
-		if err = handler.service.UpdatePost(postId, request); err != nil {
+		if err = h.service.UpdatePost(postId, &request); err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
 		}
@@ -100,7 +123,7 @@ func (handler *Handler) Update() http.HandlerFunc {
 	}
 }
 
-func (handler *Handler) ReadOne(u *users.Service) http.HandlerFunc {
+func (h *Handler) ReadOne() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		postId, err := uid.FromString(chi.URLParam(r, "post_id"))
 		if err != nil {
@@ -108,14 +131,14 @@ func (handler *Handler) ReadOne(u *users.Service) http.HandlerFunc {
 			return
 		}
 
-		post, err := handler.service.PostById(postId)
+		post, err := h.service.PostById(postId)
 		if err != nil {
 			rest.Error(w, http.StatusNotFound)
 			return
 		}
 
 		// Dependency(Users)
-		user, err := u.UserById(post.UserId)
+		user, err := h.users.UserById(post.UserId)
 		if err != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
@@ -128,7 +151,7 @@ func (handler *Handler) ReadOne(u *users.Service) http.HandlerFunc {
 	}
 }
 
-func (handler *Handler) ReadMany(u *users.Service) http.HandlerFunc {
+func (h *Handler) ReadMany() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var cursor string
 
@@ -138,7 +161,7 @@ func (handler *Handler) ReadMany(u *users.Service) http.HandlerFunc {
 		// page available for pagination
 		pagination.Limit++
 
-		posts, err := handler.service.ListPosts(pagination)
+		posts, err := h.service.ListPosts(pagination)
 		if err != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
@@ -171,7 +194,7 @@ func (handler *Handler) ReadMany(u *users.Service) http.HandlerFunc {
 		userIds := UniqueUserIds(posts)
 
 		// Dependency(Users)
-		postsUsers, err := u.UsersByIds(userIds)
+		postsUsers, err := h.users.UsersByIds(userIds)
 		if err != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
@@ -185,6 +208,6 @@ func (handler *Handler) ReadMany(u *users.Service) http.HandlerFunc {
 	}
 }
 
-func NewHandler(s *Service, v *validate.Validate) *Handler {
-	return &Handler{s, v}
+func NewHandler(s *Service, u *users.Service, v *validate.Validate) *Handler {
+	return &Handler{s, u, v}
 }
