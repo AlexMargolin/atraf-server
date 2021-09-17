@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"atraf-server/services/account"
+	"atraf-server/services/bucket"
 	"atraf-server/services/comments"
 	"atraf-server/services/posts"
 	"atraf-server/services/users"
@@ -20,28 +21,31 @@ func main() {
 		log.Fatal(err)
 	}
 
-	db, err := app.DBConnection()
+	sql, err := app.DBConnection()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	validator := validate.NewValidator()
 
-	accountStorage := account.NewStorage(db)
-	accountService := account.NewService(accountStorage)
-	accountHandler := account.NewHandler(accountService, validator)
+	bucketStorage := bucket.NewFSBucket()
+	bucketService := bucket.NewService(bucketStorage)
 
-	usersStorage := users.NewStorage(db)
+	usersStorage := users.NewStorage(sql)
 	usersService := users.NewService(usersStorage)
 	usersHandler := users.NewHandler(usersService, validator)
 
-	postsStorage := posts.NewStorage(db)
-	postsService := posts.NewService(postsStorage)
-	postsHandler := posts.NewHandler(postsService, validator)
+	accountStorage := account.NewStorage(sql)
+	accountService := account.NewService(accountStorage)
+	accountHandler := account.NewHandler(accountService, usersService, validator)
 
-	commentsStorage := comments.NewStorage(db)
+	postsStorage := posts.NewStorage(sql, bucketService)
+	postsService := posts.NewService(postsStorage)
+	postsHandler := posts.NewHandler(postsService, usersService, validator)
+
+	commentsStorage := comments.NewStorage(sql)
 	commentsService := comments.NewService(commentsStorage)
-	commentsHandler := comments.NewHandler(commentsService, validator)
+	commentsHandler := comments.NewHandler(commentsService, usersService, validator)
 
 	router := chi.NewRouter()
 	router.Use(middleware.Cors)
@@ -50,7 +54,7 @@ func main() {
 	// Public Routes
 	router.Group(func(router chi.Router) {
 		// Account
-		router.Post("/account/register", accountHandler.Register(usersService))
+		router.Post("/account/register", accountHandler.Register())
 		router.Post("/account/login", accountHandler.Login())
 		router.Post("/account/forgot", accountHandler.Forgot())
 		router.Patch("/account/reset", accountHandler.Reset())
@@ -72,14 +76,14 @@ func main() {
 		router.Get("/users/{user_id}", usersHandler.ReadOne())
 
 		// Posts
-		router.Post("/posts", postsHandler.Create(usersService))
+		router.Post("/posts", postsHandler.Create())
 		router.Put("/posts/{post_id}", postsHandler.Update())
-		router.Get("/posts/{post_id}", postsHandler.ReadOne(usersService))
-		router.With(middleware.Pagination).Get("/posts", postsHandler.ReadMany(usersService))
+		router.Get("/posts/{post_id}", postsHandler.ReadOne())
+		router.With(middleware.Pagination).Get("/posts", postsHandler.ReadMany())
 
 		// Comments
-		router.Post("/comments", commentsHandler.Create(usersService))
-		router.Get("/comments/{source_id}", commentsHandler.ReadMany(usersService))
+		router.Post("/comments", commentsHandler.Create())
+		router.Get("/comments/{source_id}", commentsHandler.ReadMany())
 		router.Put("/comments/{comment_id}", commentsHandler.Update())
 	})
 

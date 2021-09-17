@@ -32,10 +32,11 @@ type ReadManyResponse struct {
 
 type Handler struct {
 	service  *Service
+	users    *users.Service
 	validate *validate.Validate
 }
 
-func (handler *Handler) Create(u *users.Service) http.HandlerFunc {
+func (h *Handler) Create() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request CreateRequest
 		auth := middleware.GetAuthContext(r)
@@ -45,19 +46,19 @@ func (handler *Handler) Create(u *users.Service) http.HandlerFunc {
 			return
 		}
 
-		if err := handler.validate.Struct(request); err != nil {
+		if err := h.validate.Struct(request); err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity)
 			return
 		}
 
 		// Dependency(Users)
-		user, err := u.UserByAccountId(auth.AccountId)
+		user, err := h.users.UserByAccountId(auth.AccountId)
 		if err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
 		}
 
-		comment, err := handler.service.NewComment(user.Id, request.SourceId, request.ParentId, request.CommentFields)
+		comment, err := h.service.NewComment(user.Id, request.SourceId, request.ParentId, request.CommentFields)
 		if err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
@@ -69,7 +70,7 @@ func (handler *Handler) Create(u *users.Service) http.HandlerFunc {
 	}
 }
 
-func (handler *Handler) Update() http.HandlerFunc {
+func (h *Handler) Update() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request UpdateRequest
 
@@ -84,12 +85,12 @@ func (handler *Handler) Update() http.HandlerFunc {
 			return
 		}
 
-		if err = handler.validate.Struct(request); err != nil {
+		if err = h.validate.Struct(request); err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity)
 			return
 		}
 
-		if err = handler.service.UpdateComment(commentId, request); err != nil {
+		if err = h.service.UpdateComment(commentId, request); err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
 		}
@@ -98,7 +99,7 @@ func (handler *Handler) Update() http.HandlerFunc {
 	}
 }
 
-func (handler *Handler) ReadMany(u *users.Service) http.HandlerFunc {
+func (h *Handler) ReadMany() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		sourceId, err := uid.FromString(chi.URLParam(r, "source_id"))
@@ -107,7 +108,7 @@ func (handler *Handler) ReadMany(u *users.Service) http.HandlerFunc {
 			return
 		}
 
-		comments, err := handler.service.CommentsBySourceId(sourceId)
+		comments, err := h.service.CommentsBySourceId(sourceId)
 		if err != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
@@ -124,7 +125,7 @@ func (handler *Handler) ReadMany(u *users.Service) http.HandlerFunc {
 		userIds := UniqueUserIds(comments)
 
 		// Dependency(Users)
-		__users, err := u.UsersByIds(userIds)
+		__users, err := h.users.UsersByIds(userIds)
 		if err != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
@@ -137,6 +138,6 @@ func (handler *Handler) ReadMany(u *users.Service) http.HandlerFunc {
 	}
 }
 
-func NewHandler(s *Service, v *validate.Validate) *Handler {
-	return &Handler{s, v}
+func NewHandler(s *Service, u *users.Service, v *validate.Validate) *Handler {
+	return &Handler{s, u, v}
 }

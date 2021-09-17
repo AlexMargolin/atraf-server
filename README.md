@@ -43,6 +43,8 @@
 41. replace jwt calims with 3 letters (in the json tags)
 42. change access token duration to 10 mins
 43. refactor account mail package
+44. todo add health check endpoint
+45. add user deps to service constructor
 
 # Features
 

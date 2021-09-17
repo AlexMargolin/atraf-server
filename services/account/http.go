@@ -38,10 +38,11 @@ type ResetRequest struct {
 
 type Handler struct {
 	service  *Service
+	users    *users.Service
 	validate *validate.Validate
 }
 
-func (handler *Handler) Register(u *users.Service) http.HandlerFunc {
+func (h *Handler) Register() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request RegisterRequest
 
@@ -50,12 +51,12 @@ func (handler *Handler) Register(u *users.Service) http.HandlerFunc {
 			return
 		}
 
-		if err := handler.validate.Struct(request); err != nil {
+		if err := h.validate.Struct(request); err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity)
 			return
 		}
 
-		account, err := handler.service.Register(request.Email, request.Password)
+		account, err := h.service.Register(request.Email, request.Password)
 		if err != nil {
 			rest.Error(w, http.StatusConflict)
 			return
@@ -63,7 +64,7 @@ func (handler *Handler) Register(u *users.Service) http.HandlerFunc {
 
 		// Dependency(Users)
 		// TODO should be part of a transaction?
-		if u.NewUser(account.Id, users.UserFields{Email: account.Email}) != nil {
+		if h.users.NewUser(account.Id, users.UserFields{Email: account.Email}) != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
 		}
@@ -77,7 +78,7 @@ func (handler *Handler) Register(u *users.Service) http.HandlerFunc {
 	}
 }
 
-func (handler *Handler) Activate() http.HandlerFunc {
+func (h *Handler) Activate() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request ActivateRequest
 		auth := middleware.GetAuthContext(r)
@@ -87,12 +88,12 @@ func (handler *Handler) Activate() http.HandlerFunc {
 			return
 		}
 
-		if err := handler.validate.Struct(request); err != nil {
+		if err := h.validate.Struct(request); err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity)
 			return
 		}
 
-		if err := handler.service.Activate(auth.AccountId, request.Code); err != nil {
+		if err := h.service.Activate(auth.AccountId, request.Code); err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
 		}
@@ -107,7 +108,7 @@ func (handler *Handler) Activate() http.HandlerFunc {
 	}
 }
 
-func (handler *Handler) Login() http.HandlerFunc {
+func (h *Handler) Login() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request LoginRequest
 
@@ -116,12 +117,12 @@ func (handler *Handler) Login() http.HandlerFunc {
 			return
 		}
 
-		if err := handler.validate.Struct(request); err != nil {
+		if err := h.validate.Struct(request); err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity)
 			return
 		}
 
-		account, err := handler.service.Login(request.Email, request.Password)
+		account, err := h.service.Login(request.Email, request.Password)
 		if err != nil {
 			rest.Error(w, http.StatusUnauthorized)
 			return
@@ -136,7 +137,7 @@ func (handler *Handler) Login() http.HandlerFunc {
 	}
 }
 
-func (handler *Handler) Forgot() http.HandlerFunc {
+func (h *Handler) Forgot() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request ForgotRequest
 
@@ -145,13 +146,13 @@ func (handler *Handler) Forgot() http.HandlerFunc {
 			return
 		}
 
-		if err := handler.validate.Struct(request); err != nil {
+		if err := h.validate.Struct(request); err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity)
 			return
 		}
 
 		// Whether an account can be found or not, a "successful" response is returned.
-		if err := handler.service.Forgot(request.Email); err != nil {
+		if err := h.service.Forgot(request.Email); err != nil {
 			rest.Success(w, http.StatusNoContent, nil)
 			return
 		}
@@ -160,7 +161,7 @@ func (handler *Handler) Forgot() http.HandlerFunc {
 	}
 }
 
-func (handler *Handler) Reset() http.HandlerFunc {
+func (h *Handler) Reset() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request ResetRequest
 
@@ -169,7 +170,7 @@ func (handler *Handler) Reset() http.HandlerFunc {
 			return
 		}
 
-		if err := handler.validate.Struct(request); err != nil {
+		if err := h.validate.Struct(request); err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity)
 			return
 		}
@@ -180,7 +181,7 @@ func (handler *Handler) Reset() http.HandlerFunc {
 			return
 		}
 
-		if err = handler.service.UpdatePassword(t.AccountId, request.NewPassword); err != nil {
+		if err = h.service.UpdatePassword(t.AccountId, request.NewPassword); err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
 		}
@@ -189,6 +190,6 @@ func (handler *Handler) Reset() http.HandlerFunc {
 	}
 }
 
-func NewHandler(s *Service, v *validate.Validate) *Handler {
-	return &Handler{s, v}
+func NewHandler(s *Service, u *users.Service, v *validate.Validate) *Handler {
+	return &Handler{s, u, v}
 }
