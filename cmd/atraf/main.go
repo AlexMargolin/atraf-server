@@ -51,9 +51,11 @@ func main() {
 	router.Use(middleware.Cors)
 	router.Use(middleware.Options)
 
+	// FS Bucket specific file server
+	router.Get("/uploads/*", bucketStorage.ServeFiles())
+
 	// Public Routes
 	router.Group(func(router chi.Router) {
-		// Account
 		router.Post("/account/register", accountHandler.Register())
 		router.Post("/account/login", accountHandler.Login())
 		router.Post("/account/forgot", accountHandler.Forgot())
@@ -64,7 +66,6 @@ func main() {
 	router.Group(func(router chi.Router) {
 		router.Use(middleware.Authenticate(false))
 
-		// Account
 		router.Patch("/account/activate", accountHandler.Activate())
 	})
 
@@ -72,16 +73,13 @@ func main() {
 	router.Group(func(router chi.Router) {
 		router.Use(middleware.Authenticate(true))
 
-		// Users
 		router.Get("/users/{user_id}", usersHandler.ReadOne())
 
-		// Posts
 		router.Post("/posts", postsHandler.Create())
 		router.Put("/posts/{post_id}", postsHandler.Update())
 		router.Get("/posts/{post_id}", postsHandler.ReadOne())
 		router.With(middleware.Pagination).Get("/posts", postsHandler.ReadMany())
 
-		// Comments
 		router.Post("/comments", commentsHandler.Create())
 		router.Get("/comments/{source_id}", commentsHandler.ReadMany())
 		router.Put("/comments/{comment_id}", commentsHandler.Update())

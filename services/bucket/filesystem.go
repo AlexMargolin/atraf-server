@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
+	"net/http"
 	"os"
 )
 
@@ -47,6 +48,13 @@ func (FSBucket) SaveFile(name string, path string, file multipart.File) (string,
 
 func (FSBucket) PrependBucketURL(filename string) string {
 	return fmt.Sprintf("%s/%s", os.Getenv("BUCKET_URL"), filename)
+}
+
+func (FSBucket) ServeFiles() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		dir := http.Dir(UploadsBaseDir)
+		http.StripPrefix("/"+UploadsBaseDir, http.FileServer(dir)).ServeHTTP(w, r)
+	}
 }
 
 func NewFSBucket() *FSBucket {
