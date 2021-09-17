@@ -35,20 +35,20 @@ type Service struct {
 	storage Storage
 }
 
-func (service *Service) UserById(userId uid.UID) (User, error) {
-	return service.storage.ById(userId)
+func (s Service) UserById(userId uid.UID) (User, error) {
+	return s.storage.ById(userId)
 }
 
-func (service *Service) UsersByIds(userIds []uid.UID) ([]User, error) {
-	return service.storage.ByIds(userIds)
+func (s Service) UsersByIds(userIds []uid.UID) ([]User, error) {
+	return s.storage.ByIds(userIds)
 }
 
-func (service *Service) UserByAccountId(accountId uid.UID) (User, error) {
-	return service.storage.ByAccountId(accountId)
+func (s Service) UserByAccountId(accountId uid.UID) (User, error) {
+	return s.storage.ByAccountId(accountId)
 }
 
-func (service *Service) NewUser(accountId uid.UID, fields UserFields) error {
-	return service.storage.Insert(accountId, fields)
+func (s Service) NewUser(accountId uid.UID, fields UserFields) error {
+	return s.storage.Insert(accountId, fields)
 }
 
 func NewService(storage Storage) *Service {

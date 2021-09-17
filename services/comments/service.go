@@ -32,16 +32,16 @@ type Service struct {
 	storage Storage
 }
 
-func (service *Service) NewComment(userId uid.UID, sourceId uid.UID, parentId uid.UID, fields CommentFields) (Comment, error) {
-	return service.storage.Insert(userId, sourceId, parentId, fields)
+func (s Service) NewComment(userId uid.UID, sourceId uid.UID, parentId uid.UID, fields CommentFields) (Comment, error) {
+	return s.storage.Insert(userId, sourceId, parentId, fields)
 }
 
-func (service *Service) UpdateComment(commentId uid.UID, fields CommentFields) error {
-	return service.storage.Update(commentId, fields)
+func (s Service) UpdateComment(commentId uid.UID, fields CommentFields) error {
+	return s.storage.Update(commentId, fields)
 }
 
-func (service *Service) CommentsBySourceId(sourceId uid.UID) ([]Comment, error) {
-	return service.storage.Many(sourceId)
+func (s Service) CommentsBySourceId(sourceId uid.UID) ([]Comment, error) {
+	return s.storage.Many(sourceId)
 }
 
 func UniqueUserIds(comments []Comment) []uid.UID {

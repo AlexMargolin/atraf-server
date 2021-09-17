@@ -37,20 +37,20 @@ type Service struct {
 	storage Storage
 }
 
-func (service *Service) PostById(postId uid.UID) (Post, error) {
-	return service.storage.One(postId)
+func (s Service) PostById(postId uid.UID) (Post, error) {
+	return s.storage.One(postId)
 }
 
-func (service *Service) ListPosts(pagination *middleware.PaginationContext) ([]Post, error) {
-	return service.storage.Many(pagination)
+func (s Service) ListPosts(pagination *middleware.PaginationContext) ([]Post, error) {
+	return s.storage.Many(pagination)
 }
 
-func (service *Service) NewPost(userId uid.UID, fields *PostFields) (uid.UID, error) {
-	return service.storage.Insert(userId, fields)
+func (s Service) NewPost(userId uid.UID, fields *PostFields) (uid.UID, error) {
+	return s.storage.Insert(userId, fields)
 }
 
-func (service *Service) UpdatePost(postId uid.UID, fields *PostFields) error {
-	return service.storage.Update(postId, fields)
+func (s Service) UpdatePost(postId uid.UID, fields *PostFields) error {
+	return s.storage.Update(postId, fields)
 }
 
 func UniqueUserIds(posts []Post) []uid.UID {

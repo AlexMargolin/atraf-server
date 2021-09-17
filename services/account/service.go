@@ -31,13 +31,13 @@ type Service struct {
 	storage Storage
 }
 
-func (service *Service) Register(email string, password string) (Account, error) {
-	passwordHash, err := service.newPasswordHash(password)
+func (s Service) Register(email string, password string) (Account, error) {
+	passwordHash, err := s.newPasswordHash(password)
 	if err != nil {
 		return Account{}, err
 	}
 
-	account, err := service.storage.NewAccount(email, passwordHash)
+	account, err := s.storage.NewAccount(email, passwordHash)
 	if err != nil {
 		return Account{}, err
 	}
@@ -49,21 +49,21 @@ func (service *Service) Register(email string, password string) (Account, error)
 	return account, nil
 }
 
-func (service *Service) Login(email string, password string) (Account, error) {
-	account, err := service.storage.ByEmail(email)
+func (s Service) Login(email string, password string) (Account, error) {
+	account, err := s.storage.ByEmail(email)
 	if err != nil {
 		return Account{}, err
 	}
 
-	if err = service.comparePasswordHash(password, account.PasswordHash); err != nil {
+	if err = s.comparePasswordHash(password, account.PasswordHash); err != nil {
 		return Account{}, err
 	}
 
 	return account, nil
 }
 
-func (service *Service) Forgot(email string) error {
-	account, err := service.storage.ByEmail(email)
+func (s Service) Forgot(email string) error {
+	account, err := s.storage.ByEmail(email)
 	if err != nil {
 		return err
 	}
@@ -71,26 +71,26 @@ func (service *Service) Forgot(email string) error {
 	return SendPasswordResetMail(account)
 }
 
-func (service *Service) Activate(accountId uid.UID, activationCode string) error {
-	return service.storage.SetActive(accountId, activationCode)
+func (s Service) Activate(accountId uid.UID, activationCode string) error {
+	return s.storage.SetActive(accountId, activationCode)
 }
 
-func (service *Service) Pending(accountId uid.UID) (string, error) {
-	return service.storage.SetPending(accountId)
+func (s Service) Pending(accountId uid.UID) (string, error) {
+	return s.storage.SetPending(accountId)
 }
 
-func (service *Service) UpdatePassword(accountId uid.UID, password string) error {
-	passwordHash, err := service.newPasswordHash(password)
+func (s Service) UpdatePassword(accountId uid.UID, password string) error {
+	passwordHash, err := s.newPasswordHash(password)
 	if err != nil {
 		return err
 	}
 
-	account, err := service.storage.ByAccountId(accountId)
+	account, err := s.storage.ByAccountId(accountId)
 	if err != nil {
 		return err
 	}
 
-	if err = service.storage.UpdatePassword(account.Id, passwordHash); err != nil {
+	if err = s.storage.UpdatePassword(account.Id, passwordHash); err != nil {
 		return err
 	}
 

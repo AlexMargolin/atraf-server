@@ -25,15 +25,15 @@ type Service struct {
 	bucket Bucket
 }
 
-func (service Service) Type() string {
-	return service.bucket.Type()
+func (s Service) Type() string {
+	return s.bucket.Type()
 }
 
-func (service Service) FileURL(filename string) string {
-	return service.bucket.PrependBucketURL(filename)
+func (s Service) FileURL(filename string) string {
+	return s.bucket.PrependBucketURL(filename)
 }
 
-func (service Service) Save(file multipart.File) (string, error) {
+func (s Service) Save(file multipart.File) (string, error) {
 	buffer := make([]byte, 512)
 	if _, err := file.Read(buffer); err != nil {
 		return "", err
@@ -45,16 +45,16 @@ func (service Service) Save(file multipart.File) (string, error) {
 	}
 
 	contentType := http.DetectContentType(buffer)
-	if !service.checkContentType(contentType) {
+	if !s.checkContentType(contentType) {
 		return "", errors.New("unsupported content-type")
 	}
 
-	filename, filepath, err := service.uploadLocation(contentType)
+	filename, filepath, err := s.uploadLocation(contentType)
 	if err != nil {
 		return "", err
 	}
 
-	path, err := service.bucket.SaveFile(filename, filepath, file)
+	path, err := s.bucket.SaveFile(filename, filepath, file)
 	if err != nil {
 		return "", err
 	}
