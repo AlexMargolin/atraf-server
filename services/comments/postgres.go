@@ -23,21 +23,21 @@ type PostgresComment struct {
 }
 
 type Postgres struct {
-	Db *sqlx.DB
+	db *sqlx.DB
 }
 
-func (postgres *Postgres) Many(sourceId uid.UID) ([]Comment, error) {
+func (p Postgres) Many(sourceId uid.UID) ([]Comment, error) {
 	var comments []PostgresComment
 
 	query := `SELECT * FROM comments WHERE source_uuid = $1 ORDER BY created_at DESC`
-	if err := postgres.Db.Select(&comments, query, sourceId); err != nil {
+	if err := p.db.Select(&comments, query, sourceId); err != nil {
 		return nil, err
 	}
 
 	return prepareMany(comments), nil
 }
 
-func (postgres *Postgres) Insert(userId uid.UID, sourceId uid.UID, parentId uid.UID, fields CommentFields) (Comment, error) {
+func (p Postgres) Insert(userId uid.UID, sourceId uid.UID, parentId uid.UID, fields CommentFields) (Comment, error) {
 	var comment PostgresComment
 
 	query := `
@@ -45,16 +45,16 @@ func (postgres *Postgres) Insert(userId uid.UID, sourceId uid.UID, parentId uid.
 	VALUES ($1, $2, $3, $4) 
 	RETURNING *`
 
-	if err := postgres.Db.Get(&comment, query, userId, sourceId, parentId, fields.Body); err != nil {
+	if err := p.db.Get(&comment, query, userId, sourceId, parentId, fields.Body); err != nil {
 		return Comment{}, err
 	}
 
 	return prepareOne(comment), nil
 }
 
-func (postgres *Postgres) Update(commentId uid.UID, fields CommentFields) error {
+func (p Postgres) Update(commentId uid.UID, fields CommentFields) error {
 	query := `UPDATE comments SET body = $2 WHERE uuid = $1`
-	result, err := postgres.Db.Exec(query, commentId, fields.Body)
+	result, err := p.db.Exec(query, commentId, fields.Body)
 	if err != nil {
 		return err
 	}

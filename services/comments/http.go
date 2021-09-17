@@ -36,7 +36,7 @@ type Handler struct {
 	validate *validate.Validate
 }
 
-func (h *Handler) Create() http.HandlerFunc {
+func (h Handler) Create() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request CreateRequest
 		auth := middleware.GetAuthContext(r)
@@ -70,7 +70,7 @@ func (h *Handler) Create() http.HandlerFunc {
 	}
 }
 
-func (h *Handler) Update() http.HandlerFunc {
+func (h Handler) Update() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request UpdateRequest
 
@@ -99,7 +99,7 @@ func (h *Handler) Update() http.HandlerFunc {
 	}
 }
 
-func (h *Handler) ReadMany() http.HandlerFunc {
+func (h Handler) ReadMany() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		sourceId, err := uid.FromString(chi.URLParam(r, "source_id"))

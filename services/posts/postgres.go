@@ -25,11 +25,11 @@ type PostgresPost struct {
 }
 
 type Postgres struct {
-	Db     *sqlx.DB
-	Bucket *bucket.Service
+	db     *sqlx.DB
+	bucket *bucket.Service
 }
 
-func (postgres Postgres) One(postId uid.UID) (Post, error) {
+func (p Postgres) One(postId uid.UID) (Post, error) {
 	var post PostgresPost
 
 	query := `
@@ -40,17 +40,17 @@ func (postgres Postgres) One(postId uid.UID) (Post, error) {
 		LIMIT 1`
 
 	// Returns an error when no results are found.
-	if err := postgres.Db.Get(&post, query, postId); err != nil {
+	if err := p.db.Get(&post, query, postId); err != nil {
 		return Post{}, err
 	}
 
-	return prepareOne(post), nil
+	return p.prepareOne(post), nil
 }
 
-func (postgres Postgres) Many(p *middleware.PaginationContext) ([]Post, error) {
+func (p Postgres) Many(pc *middleware.PaginationContext) ([]Post, error) {
 	var posts []PostgresPost
 
-	if p.Cursor.Key != uid.Nil {
+	if pc.Cursor.Key != uid.Nil {
 		query := `
 		SELECT posts.*, attachments.filename 
 		FROM posts 
@@ -59,7 +59,7 @@ func (postgres Postgres) Many(p *middleware.PaginationContext) ([]Post, error) {
 		ORDER BY posts.created_at DESC 
 		LIMIT $3`
 
-		if err := postgres.Db.Select(&posts, query, p.Cursor.Value, p.Cursor.Key, p.Limit); err != nil {
+		if err := p.db.Select(&posts, query, pc.Cursor.Value, pc.Cursor.Key, pc.Limit); err != nil {
 			return nil, err
 		}
 	} else {
@@ -70,19 +70,19 @@ func (postgres Postgres) Many(p *middleware.PaginationContext) ([]Post, error) {
 		ORDER BY posts.created_at DESC 
 		LIMIT $1`
 
-		if err := postgres.Db.Select(&posts, query, p.Limit); err != nil {
+		if err := p.db.Select(&posts, query, pc.Limit); err != nil {
 			return nil, err
 		}
 	}
 
-	return prepareMany(posts), nil
+	return p.prepareMany(posts), nil
 }
 
-func (postgres Postgres) Insert(userId uid.UID, fields *PostFields) (uid.UID, error) {
+func (p Postgres) Insert(userId uid.UID, fields *PostFields) (uid.UID, error) {
 	var err error
 	var uuid uid.UID
 
-	tx := postgres.Db.MustBegin()
+	tx := p.db.MustBegin()
 	defer func() {
 		if err != nil {
 			_ = tx.Rollback()
@@ -96,13 +96,13 @@ func (postgres Postgres) Insert(userId uid.UID, fields *PostFields) (uid.UID, er
 		return uid.Nil, err
 	}
 
-	path, err := postgres.Bucket.Save(fields.File)
+	path, err := p.bucket.Save(fields.File)
 	if err != nil {
 		return uid.Nil, err
 	}
 
 	query = `INSERT INTO attachments (source_uuid, filename, bucket_name) VALUES ($1, $2, $3)`
-	result, err := postgres.Db.Exec(query, uuid, path, postgres.Bucket.Type())
+	result, err := tx.Exec(query, uuid, path, p.bucket.Type())
 	if err != nil {
 		return uid.Nil, err
 	}
@@ -119,9 +119,9 @@ func (postgres Postgres) Insert(userId uid.UID, fields *PostFields) (uid.UID, er
 	return uuid, nil
 }
 
-func (postgres Postgres) Update(postId uid.UID, fields *PostFields) error {
+func (p Postgres) Update(postId uid.UID, fields *PostFields) error {
 	query := `UPDATE posts SET title = $2, body = $3 WHERE uuid = $1`
-	result, err := postgres.Db.Exec(query, postId, fields.Title, fields.Body)
+	result, err := p.db.Exec(query, postId, fields.Title, fields.Body)
 	if err != nil {
 		return err
 	}
@@ -138,23 +138,29 @@ func (postgres Postgres) Update(postId uid.UID, fields *PostFields) error {
 	return nil
 }
 
-func prepareOne(pp PostgresPost) Post {
-	return Post{
-		Id:         pp.Uuid,
-		UserId:     pp.UserUuid,
-		Title:      pp.Title,
-		Body:       pp.Body,
-		Attachment: pp.Attachment.String,
-		CreatedAt:  pp.CreatedAt,
-		UpdatedAt:  pp.UpdatedAt.Time,
+func (p Postgres) prepareOne(pp PostgresPost) Post {
+	post := Post{
+		Id:        pp.Uuid,
+		UserId:    pp.UserUuid,
+		Title:     pp.Title,
+		Body:      pp.Body,
+		CreatedAt: pp.CreatedAt,
+		UpdatedAt: pp.UpdatedAt.Time,
 	}
+
+	// attachment url
+	if pp.Attachment.Valid {
+		post.Attachment = p.bucket.FileURL(pp.Attachment.String)
+	}
+
+	return post
 }
 
-func prepareMany(pp []PostgresPost) []Post {
+func (p Postgres) prepareMany(pp []PostgresPost) []Post {
 	var posts = make([]Post, 0)
 
 	for _, post := range pp {
-		posts = append(posts, prepareOne(post))
+		posts = append(posts, p.prepareOne(post))
 	}
 
 	return posts

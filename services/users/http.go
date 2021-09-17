@@ -19,7 +19,7 @@ type Handler struct {
 	validate *validate.Validate
 }
 
-func (handler *Handler) ReadOne() http.HandlerFunc {
+func (h Handler) ReadOne() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userId, err := uid.FromString(chi.URLParam(r, "user_id"))
 		if err != nil {
@@ -27,7 +27,7 @@ func (handler *Handler) ReadOne() http.HandlerFunc {
 			return
 		}
 
-		user, err := handler.service.UserById(userId)
+		user, err := h.service.UserById(userId)
 		if err != nil {
 			rest.Error(w, http.StatusNotFound)
 			return

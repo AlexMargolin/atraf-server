@@ -22,10 +22,10 @@ type PostgresUser struct {
 }
 
 type Postgres struct {
-	Db *sqlx.DB
+	db *sqlx.DB
 }
 
-func (postgres Postgres) ById(userId uid.UID) (User, error) {
+func (p Postgres) ById(userId uid.UID) (User, error) {
 	var user PostgresUser
 
 	query := `
@@ -42,14 +42,14 @@ func (postgres Postgres) ById(userId uid.UID) (User, error) {
 	WHERE uuid = $1 
 	LIMIT 1`
 
-	if err := postgres.Db.Get(&user, query, userId); err != nil {
+	if err := p.db.Get(&user, query, userId); err != nil {
 		return User{}, err
 	}
 
 	return prepareOne(user), nil
 }
 
-func (postgres Postgres) ByIds(userIds []uid.UID) ([]User, error) {
+func (p Postgres) ByIds(userIds []uid.UID) ([]User, error) {
 	var users []PostgresUser
 
 	query := `
@@ -69,16 +69,16 @@ func (postgres Postgres) ByIds(userIds []uid.UID) ([]User, error) {
 	if err != nil {
 		return []User{}, err
 	}
-	query = postgres.Db.Rebind(query)
+	query = p.db.Rebind(query)
 
-	if err := postgres.Db.Select(&users, query, args...); err != nil {
+	if err := p.db.Select(&users, query, args...); err != nil {
 		return []User{}, err
 	}
 
 	return prepareMany(users), nil
 }
 
-func (postgres Postgres) ByAccountId(accountId uid.UID) (User, error) {
+func (p Postgres) ByAccountId(accountId uid.UID) (User, error) {
 	var user PostgresUser
 
 	query := `
@@ -95,19 +95,19 @@ func (postgres Postgres) ByAccountId(accountId uid.UID) (User, error) {
 	WHERE account_uuid = $1 
 	LIMIT 1`
 
-	if err := postgres.Db.Get(&user, query, accountId); err != nil {
+	if err := p.db.Get(&user, query, accountId); err != nil {
 		return User{}, err
 	}
 
 	return prepareOne(user), nil
 }
 
-func (postgres Postgres) Insert(accountId uid.UID, fields UserFields) error {
+func (p Postgres) Insert(accountId uid.UID, fields UserFields) error {
 	query := `
 	INSERT INTO users (account_uuid, email, first_name, last_name, profile_picture) 
 	VALUES ($1, $2, $3, $4, $5)`
 
-	if _, err := postgres.Db.Exec(query, accountId, fields.Email, fields.FirstName, fields.LastName, fields.ProfilePicture); err != nil {
+	if _, err := p.db.Exec(query, accountId, fields.Email, fields.FirstName, fields.LastName, fields.ProfilePicture); err != nil {
 		return err
 	}
 

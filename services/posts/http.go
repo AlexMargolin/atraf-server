@@ -40,10 +40,7 @@ type Handler struct {
 	validate *validate.Validate
 }
 
-// Create uses FormData instead of JSON.
-// avoids the additional work required to decode base64 files
-// as well the additional request payload size.
-func (h *Handler) Create() http.HandlerFunc {
+func (h Handler) Create() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		auth := middleware.GetAuthContext(r)
 
@@ -94,7 +91,7 @@ func (h *Handler) Create() http.HandlerFunc {
 	}
 }
 
-func (h *Handler) Update() http.HandlerFunc {
+func (h Handler) Update() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request UpdateRequest
 
@@ -123,7 +120,7 @@ func (h *Handler) Update() http.HandlerFunc {
 	}
 }
 
-func (h *Handler) ReadOne() http.HandlerFunc {
+func (h Handler) ReadOne() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		postId, err := uid.FromString(chi.URLParam(r, "post_id"))
 		if err != nil {
@@ -151,7 +148,7 @@ func (h *Handler) ReadOne() http.HandlerFunc {
 	}
 }
 
-func (h *Handler) ReadMany() http.HandlerFunc {
+func (h Handler) ReadMany() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var cursor string
 

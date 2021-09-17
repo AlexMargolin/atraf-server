@@ -24,6 +24,7 @@ func CheckEnvironment() error {
 		"SMTP_PORT",
 		"SMTP_USER",
 		"SMTP_PASS",
+		"BUCKET_URL",
 		"ACCESS_TOKEN_SECRET",
 		"RESET_TOKEN_SECRET",
 	}

@@ -22,23 +22,21 @@ type PostgresAccount struct {
 }
 
 type Postgres struct {
-	Db *sqlx.DB
+	db *sqlx.DB
 }
 
-func (postgres *Postgres) NewAccount(email string, passwordHash []byte) (Account, error) {
+func (p Postgres) NewAccount(email string, passwordHash []byte) (Account, error) {
 	var account PostgresAccount
 
 	query := `INSERT INTO accounts (email, password_hash) VALUES ($1, $2) RETURNING *`
-	if err := postgres.Db.Get(&account, query, email, passwordHash); err != nil {
+	if err := p.db.Get(&account, query, email, passwordHash); err != nil {
 		return Account{}, err
 	}
 
 	return prepareOne(account), nil
 }
 
-// SetPending deactivates the account and returns a new activation code
-// which later, is supplied to the SetActive method.
-func (postgres *Postgres) SetPending(accountId uid.UID) (string, error) {
+func (p Postgres) SetPending(accountId uid.UID) (string, error) {
 	var code string
 
 	query := `
@@ -48,14 +46,14 @@ func (postgres *Postgres) SetPending(accountId uid.UID) (string, error) {
 	WHERE uuid = $1
 	RETURNING activation_code`
 
-	if err := postgres.Db.Get(&code, query, accountId); err != nil {
+	if err := p.db.Get(&code, query, accountId); err != nil {
 		return code, err
 	}
 
 	return code, nil
 }
 
-func (postgres *Postgres) SetActive(accountId uid.UID, activationCode string) error {
+func (p Postgres) SetActive(accountId uid.UID, activationCode string) error {
 	query := `
 	UPDATE accounts 
 	SET active = true, 
@@ -63,7 +61,7 @@ func (postgres *Postgres) SetActive(accountId uid.UID, activationCode string) er
 	WHERE uuid = $1 
 	  AND activation_code = $2`
 
-	result, err := postgres.Db.Exec(query, accountId, activationCode)
+	result, err := p.db.Exec(query, accountId, activationCode)
 	if err != nil {
 		return err
 	}
@@ -80,32 +78,32 @@ func (postgres *Postgres) SetActive(accountId uid.UID, activationCode string) er
 	return nil
 }
 
-func (postgres *Postgres) ByAccountId(accountId uid.UID) (Account, error) {
+func (p Postgres) ByAccountId(accountId uid.UID) (Account, error) {
 	var account PostgresAccount
 
 	query := `SELECT * FROM accounts WHERE uuid = $1 LIMIT 1`
-	if err := postgres.Db.Get(&account, query, accountId); err != nil {
+	if err := p.db.Get(&account, query, accountId); err != nil {
 		return Account{}, err
 	}
 
 	return prepareOne(account), nil
 }
 
-func (postgres *Postgres) ByEmail(email string) (Account, error) {
+func (p Postgres) ByEmail(email string) (Account, error) {
 	var account PostgresAccount
 
 	query := `SELECT * FROM accounts WHERE email = $1 LIMIT 1`
-	if err := postgres.Db.Get(&account, query, email); err != nil {
+	if err := p.db.Get(&account, query, email); err != nil {
 		return Account{}, err
 	}
 
 	return prepareOne(account), nil
 }
 
-func (postgres *Postgres) UpdatePassword(accountId uid.UID, passwordHash []byte) error {
+func (p Postgres) UpdatePassword(accountId uid.UID, passwordHash []byte) error {
 	query := `UPDATE accounts SET password_hash = $2 WHERE uuid = $1`
 
-	result, err := postgres.Db.Exec(query, accountId, passwordHash)
+	result, err := p.db.Exec(query, accountId, passwordHash)
 	if err != nil {
 		return err
 	}

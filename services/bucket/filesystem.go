@@ -45,6 +45,10 @@ func (FSBucket) SaveFile(name string, path string, file multipart.File) (string,
 	return filename, nil
 }
 
+func (FSBucket) PrependBucketURL(filename string) string {
+	return fmt.Sprintf("%s/%s", os.Getenv("BUCKET_URL"), filename)
+}
+
 func NewFSBucket() *FSBucket {
 	return &FSBucket{}
 }

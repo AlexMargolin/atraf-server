@@ -42,7 +42,7 @@ type Handler struct {
 	validate *validate.Validate
 }
 
-func (h *Handler) Register() http.HandlerFunc {
+func (h Handler) Register() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request RegisterRequest
 
@@ -78,7 +78,7 @@ func (h *Handler) Register() http.HandlerFunc {
 	}
 }
 
-func (h *Handler) Activate() http.HandlerFunc {
+func (h Handler) Activate() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request ActivateRequest
 		auth := middleware.GetAuthContext(r)
@@ -108,7 +108,7 @@ func (h *Handler) Activate() http.HandlerFunc {
 	}
 }
 
-func (h *Handler) Login() http.HandlerFunc {
+func (h Handler) Login() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request LoginRequest
 
@@ -137,7 +137,7 @@ func (h *Handler) Login() http.HandlerFunc {
 	}
 }
 
-func (h *Handler) Forgot() http.HandlerFunc {
+func (h Handler) Forgot() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request ForgotRequest
 
@@ -161,7 +161,7 @@ func (h *Handler) Forgot() http.HandlerFunc {
 	}
 }
 
-func (h *Handler) Reset() http.HandlerFunc {
+func (h Handler) Reset() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request ResetRequest
 
