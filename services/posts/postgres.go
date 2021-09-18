@@ -14,14 +14,14 @@ import (
 )
 
 type PostgresPost struct {
-	Uuid       uid.UID        `db:"uuid"`
-	UserUuid   uid.UID        `db:"user_uuid"`
-	Title      string         `db:"title"`
-	Body       string         `db:"body"`
-	Attachment sql.NullString `db:"filename"`
-	CreatedAt  time.Time      `db:"created_at"`
-	UpdatedAt  sql.NullTime   `db:"updated_at"`
-	DeletedAt  sql.NullTime   `db:"deleted_at"`
+	Uuid       uid.UID      `db:"uuid"`
+	UserUuid   uid.UID      `db:"user_uuid"`
+	Title      string       `db:"title"`
+	Body       string       `db:"body"`
+	Attachment string       `db:"attachment"`
+	CreatedAt  time.Time    `db:"created_at"`
+	UpdatedAt  sql.NullTime `db:"updated_at"`
+	DeletedAt  sql.NullTime `db:"deleted_at"`
 }
 
 type Postgres struct {
@@ -32,12 +32,7 @@ type Postgres struct {
 func (p Postgres) One(postId uid.UID) (Post, error) {
 	var post PostgresPost
 
-	query := `
-		SELECT posts.*, attachments.filename 
-		FROM posts 
-		INNER JOIN attachments ON posts.uuid = attachments.source_uuid
-		WHERE posts.uuid = $1
-		LIMIT 1`
+	query := `SELECT * FROM posts WHERE posts.uuid = $1 LIMIT 1`
 
 	// Returns an error when no results are found.
 	if err := p.db.Get(&post, query, postId); err != nil {
@@ -52,9 +47,8 @@ func (p Postgres) Many(pc *middleware.PaginationContext) ([]Post, error) {
 
 	if pc.Cursor.Key != uid.Nil {
 		query := `
-		SELECT posts.*, attachments.filename 
+		SELECT *
 		FROM posts 
-		INNER JOIN attachments ON posts.uuid = attachments.source_uuid
 		WHERE (posts.created_at, posts.uuid) < ($1 :: timestamp, $2) 
 		ORDER BY posts.created_at DESC 
 		LIMIT $3`
@@ -64,9 +58,8 @@ func (p Postgres) Many(pc *middleware.PaginationContext) ([]Post, error) {
 		}
 	} else {
 		query := `
-		SELECT posts.*, attachments.filename 
-		FROM posts 
-		INNER JOIN attachments ON posts.uuid = attachments.source_uuid
+		SELECT *
+		FROM posts
 		ORDER BY posts.created_at DESC 
 		LIMIT $1`
 
@@ -79,41 +72,16 @@ func (p Postgres) Many(pc *middleware.PaginationContext) ([]Post, error) {
 }
 
 func (p Postgres) Insert(userId uid.UID, fields *PostFields) (uid.UID, error) {
-	var err error
 	var uuid uid.UID
 
-	tx := p.db.MustBegin()
-	defer func() {
-		if err != nil {
-			_ = tx.Rollback()
-		} else {
-			_ = tx.Commit()
-		}
-	}()
-
-	query := `INSERT INTO posts (user_uuid, title, body) VALUES ($1, $2, $3) RETURNING uuid`
-	if err = tx.Get(&uuid, query, userId, fields.Title, fields.Body); err != nil {
-		return uid.Nil, err
-	}
-
-	path, err := p.bucket.Save(fields.File)
+	attachmentPath, err := p.bucket.Save(fields.File)
 	if err != nil {
-		return uid.Nil, err
+		return uuid, err
 	}
 
-	query = `INSERT INTO attachments (source_uuid, filename, bucket_name) VALUES ($1, $2, $3)`
-	result, err := tx.Exec(query, uuid, path, p.bucket.Type())
-	if err != nil {
-		return uid.Nil, err
-	}
-
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return uid.Nil, err
-	}
-
-	if rows == 0 {
-		return uid.Nil, errors.New("post create: unable to insert attachments")
+	query := "INSERT INTO posts (user_uuid, title, body, attachment) VALUES ($1, $2, $3, $4) RETURNING uuid"
+	if err = p.db.Get(&uuid, query, userId, fields.Title, fields.Body, attachmentPath); err != nil {
+		return uuid, err
 	}
 
 	return uuid, nil
@@ -139,21 +107,15 @@ func (p Postgres) Update(postId uid.UID, fields *PostFields) error {
 }
 
 func (p Postgres) prepareOne(pp PostgresPost) Post {
-	post := Post{
-		Id:        pp.Uuid,
-		UserId:    pp.UserUuid,
-		Title:     pp.Title,
-		Body:      pp.Body,
-		CreatedAt: pp.CreatedAt,
-		UpdatedAt: pp.UpdatedAt.Time,
+	return Post{
+		Id:         pp.Uuid,
+		UserId:     pp.UserUuid,
+		Title:      pp.Title,
+		Body:       pp.Body,
+		Attachment: p.bucket.FileURL(pp.Attachment),
+		CreatedAt:  pp.CreatedAt,
+		UpdatedAt:  pp.UpdatedAt.Time,
 	}
-
-	// attachment url
-	if pp.Attachment.Valid {
-		post.Attachment = p.bucket.FileURL(pp.Attachment.String)
-	}
-
-	return post
 }
 
 func (p Postgres) prepareMany(pp []PostgresPost) []Post {

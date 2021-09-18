@@ -37,25 +37,13 @@ CREATE TABLE IF NOT EXISTS posts
     user_uuid  uuid             NOT NULL,
     title      text             NOT NULL,
     body       text             NOT NULL,
+    attachment text             NOT NULL,
     created_at timestamp        NOT NULL default current_timestamp,
     updated_at timestamp,
     deleted_at timestamp
 );
 DROP INDEX IF EXISTS posts_created_at_uuid_idx;
-CREATE INDEX posts_created_at_uuid_idx ON posts (created_at, uuid);
-
-DROP TABLE IF EXISTS attachments;
-CREATE TABLE IF NOT EXISTS attachments
-(
-    uuid        uuid PRIMARY KEY NOT NULL default gen_random_uuid(),
-    source_uuid uuid             NOT NULL,
-    filename    text             NOT NULL,
-    bucket_name text             NOT NULL,
-    created_at  timestamp        NOT NULL default current_timestamp,
-    updated_at  timestamp
-);
-DROP INDEX IF EXISTS attachments_source_uuid;
-CREATE INDEX attachments_source_uuid ON attachments (source_uuid);
+CREATE INDEX posts_created_at_uuid_idx ON posts (created_at DESC, uuid);
 
 /*COMMENTS*/
 DROP TABLE IF EXISTS comments;

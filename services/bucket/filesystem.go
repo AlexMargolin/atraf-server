@@ -53,7 +53,9 @@ func (FSBucket) PrependBucketURL(filename string) string {
 func (FSBucket) ServeFiles() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		dir := http.Dir(UploadsBaseDir)
-		http.StripPrefix("/"+UploadsBaseDir, http.FileServer(dir)).ServeHTTP(w, r)
+		handler := http.StripPrefix("/"+UploadsBaseDir, http.FileServer(dir))
+
+		handler.ServeHTTP(w, r)
 	}
 }
 
