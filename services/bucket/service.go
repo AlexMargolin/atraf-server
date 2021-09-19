@@ -16,16 +16,12 @@ var allowedContentTypes = []string{
 }
 
 type Bucket interface {
-	PrependBucketURL(filename string) string
 	SaveFile(name string, path string, file multipart.File) (string, error)
+	PrependBucketURL(filename string) string
 }
 
 type Service struct {
 	bucket Bucket
-}
-
-func (s Service) FileURL(filename string) string {
-	return s.bucket.PrependBucketURL(filename)
 }
 
 func (s Service) Save(file multipart.File) (string, error) {
@@ -55,6 +51,10 @@ func (s Service) Save(file multipart.File) (string, error) {
 	}
 
 	return path, nil
+}
+
+func (s Service) FileURL(filename string) string {
+	return s.bucket.PrependBucketURL(filename)
 }
 
 func (Service) uploadLocation(contentType string) (string, string, error) {

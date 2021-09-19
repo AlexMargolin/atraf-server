@@ -47,6 +47,7 @@
 45. add user deps to service constructor 
 46. attachment id and post id foreign key
 47. add honeypot(?)
+48. rate limit actions which send emails
 
 # Features
 
