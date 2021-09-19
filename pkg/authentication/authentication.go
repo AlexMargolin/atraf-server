@@ -103,7 +103,7 @@ func Middleware(activated bool) func(http.Handler) http.Handler {
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), ContextKey, &claims)
+			ctx := context.WithValue(r.Context(), ContextKey, claims)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
