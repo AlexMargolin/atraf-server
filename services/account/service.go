@@ -1,10 +1,15 @@
 package account
 
 import (
+	"fmt"
+	"net/mail"
+	"os"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
 
+	"atraf-server/pkg/mailer"
+	"atraf-server/pkg/token"
 	"atraf-server/pkg/uid"
 )
 
@@ -42,7 +47,7 @@ func (s Service) Register(email string, password string) (Account, error) {
 		return Account{}, err
 	}
 
-	if err = SendActivationMail(account.Email, account.ActivationCode); err != nil {
+	if err = s.sendActivationMail(account); err != nil {
 		return Account{}, err
 	}
 
@@ -68,7 +73,7 @@ func (s Service) Forgot(email string) error {
 		return err
 	}
 
-	return SendPasswordResetMail(account)
+	return s.sendPasswordResetMail(account)
 }
 
 func (s Service) Activate(accountId uid.UID, activationCode string) error {
@@ -94,7 +99,7 @@ func (s Service) UpdatePassword(accountId uid.UID, password string) error {
 		return err
 	}
 
-	if err = SendPasswordNotificationEmail(account.Email); err != nil {
+	if err = s.passwordNotificationMail(account); err != nil {
 		return err
 	}
 
@@ -107,6 +112,60 @@ func (Service) newPasswordHash(password string) ([]byte, error) {
 
 func (Service) comparePasswordHash(password string, passwordHash []byte) error {
 	return bcrypt.CompareHashAndPassword(passwordHash, []byte(password))
+}
+
+func (Service) sendPasswordResetMail(account Account) error {
+	subject := "Password Reset Request"
+	from := mail.Address{
+		Name:    "Atraf Accounts",
+		Address: "accounts@atraf.app",
+	}
+
+	resetToken, err := token.NewResetToken(token.ResetTokensCustomClaims{
+		AccountId: account.Id,
+	})
+	if err != nil {
+		return err
+	}
+
+	data := struct {
+		ResetURL string
+		Duration float64
+	}{
+		ResetURL: fmt.Sprintf("%s/reset/%s", os.Getenv("CLIENT_URL"), resetToken),
+		Duration: token.ResetTokenValidFor.Minutes(),
+	}
+
+	filename := "templates/password-reset.html"
+	return mailer.FromTemplate(filename, data, subject, from, []string{account.Email})
+}
+
+func (Service) sendActivationMail(account Account) error {
+	subject := "Account Activation Code"
+	from := mail.Address{
+		Name:    "Atraf Accounts",
+		Address: "accounts@atraf.app",
+	}
+
+	data := struct {
+		Code string
+	}{
+		Code: account.ActivationCode,
+	}
+
+	filename := "templates/account-activation.html"
+	return mailer.FromTemplate(filename, data, subject, from, []string{account.Email})
+}
+
+func (Service) passwordNotificationMail(account Account) error {
+	subject := "Password reset notification"
+	from := mail.Address{
+		Name:    "Atraf Accounts",
+		Address: "accounts@atraf.app",
+	}
+
+	filename := "templates/password-change-notice.html"
+	return mailer.FromTemplate(filename, nil, subject, from, []string{account.Email})
 }
 
 func NewService(storage Storage) *Service {

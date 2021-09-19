@@ -46,6 +46,7 @@
 44. todo add health check endpoint
 45. add user deps to service constructor 
 46. attachment id and post id foreign key
+47. add honeypot(?)
 
 # Features
 

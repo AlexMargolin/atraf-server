@@ -63,13 +63,13 @@ func (h Handler) Register() http.HandlerFunc {
 		}
 
 		// Dependency(Users)
-		// TODO should be part of a transaction?
+		// This could be a webhook
 		if h.users.NewUser(account.Id, users.UserFields{Email: account.Email}) != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
 		}
 
-		if err = session.SetCookie(w, account.Id, account.Active); err != nil {
+		if err = session.SetCookie(w, account.Id, false); err != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
 		}

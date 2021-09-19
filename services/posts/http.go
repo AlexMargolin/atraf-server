@@ -13,7 +13,10 @@ import (
 	"atraf-server/services/users"
 )
 
-const MaxUploadSize = 10 * 1024 * 1024 // 10MB
+const (
+	AttachmentMaxSize = 10 * 1024 * 1024 // 10MB
+	AttachmentFormKey = "attachment"
+)
 
 type CreateRequest = PostFields
 
@@ -45,16 +48,16 @@ func (h Handler) Create() http.HandlerFunc {
 		auth := middleware.GetAuthContext(r)
 
 		// set max request size
-		r.Body = http.MaxBytesReader(w, r.Body, MaxUploadSize)
+		r.Body = http.MaxBytesReader(w, r.Body, AttachmentMaxSize)
 
 		// set max size allowed before writing to the filesystem.
-		if err := r.ParseMultipartForm(MaxUploadSize); err != nil {
+		if err := r.ParseMultipartForm(AttachmentMaxSize); err != nil {
 			rest.Error(w, http.StatusRequestEntityTooLarge)
 			return
 		}
 		defer r.Body.Close()
 
-		file, _, err := r.FormFile("attachment")
+		file, _, err := r.FormFile(AttachmentFormKey)
 		if err != nil {
 			rest.Error(w, http.StatusUnprocessableEntity)
 			return

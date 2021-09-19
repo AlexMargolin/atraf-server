@@ -10,14 +10,9 @@ import (
 
 const (
 	UploadsBaseDir = "uploads"
-	FSBucketType   = "filesystem"
 )
 
 type FSBucket struct{}
-
-func (FSBucket) Type() string {
-	return FSBucketType
-}
 
 func (FSBucket) SaveFile(name string, path string, file multipart.File) (string, error) {
 	dir := fmt.Sprintf("%s/%s", UploadsBaseDir, path)
