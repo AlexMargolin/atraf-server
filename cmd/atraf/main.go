@@ -12,6 +12,7 @@ import (
 	"atraf-server/services/users"
 
 	"atraf-server/app"
+	"atraf-server/pkg/authentication"
 	"atraf-server/pkg/middleware"
 	"atraf-server/pkg/validate"
 )
@@ -51,9 +52,6 @@ func main() {
 	router.Use(middleware.Cors)
 	router.Use(middleware.Options)
 
-	// FS Bucket specific file server
-	router.Get("/uploads/*", bucketStorage.ServeFiles())
-
 	// Public Routes
 	router.Group(func(router chi.Router) {
 		router.Post("/account/register", accountHandler.Register())
@@ -64,14 +62,17 @@ func main() {
 
 	// Private Routes (unverified users)
 	router.Group(func(router chi.Router) {
-		router.Use(middleware.Authenticate(false))
+		router.Use(authentication.Middleware(false))
 
 		router.Patch("/account/activate", accountHandler.Activate())
 	})
 
 	// Private Routes (verified users)
 	router.Group(func(router chi.Router) {
-		router.Use(middleware.Authenticate(true))
+		router.Use(authentication.Middleware(true))
+
+		// FS Bucket specific file server
+		router.Get("/uploads/*", bucketStorage.ServeFiles())
 
 		router.Get("/users/{user_id}", usersHandler.ReadOne())
 

@@ -4,12 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"atraf-server/pkg/middleware"
-	"atraf-server/pkg/session"
-	"atraf-server/pkg/token"
 	"atraf-server/services/users"
 
+	"atraf-server/pkg/authentication"
 	"atraf-server/pkg/rest"
+	"atraf-server/pkg/token"
 	"atraf-server/pkg/validate"
 )
 
@@ -69,7 +68,7 @@ func (h Handler) Register() http.HandlerFunc {
 			return
 		}
 
-		if err = session.SetCookie(w, account.Id, false); err != nil {
+		if err = authentication.SetCookie(w, account.Id, false); err != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
 		}
@@ -81,7 +80,7 @@ func (h Handler) Register() http.HandlerFunc {
 func (h Handler) Activate() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request ActivateRequest
-		auth := middleware.GetAuthContext(r)
+		auth := authentication.Context(r)
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 			rest.Error(w, http.StatusUnsupportedMediaType)
@@ -99,7 +98,7 @@ func (h Handler) Activate() http.HandlerFunc {
 		}
 
 		// Issue New Access Token
-		if err := session.SetCookie(w, auth.AccountId, true); err != nil {
+		if err := authentication.SetCookie(w, auth.AccountId, true); err != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
 		}
@@ -128,7 +127,7 @@ func (h Handler) Login() http.HandlerFunc {
 			return
 		}
 
-		if err = session.SetCookie(w, account.Id, account.Active); err != nil {
+		if err = authentication.SetCookie(w, account.Id, account.Active); err != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
 		}

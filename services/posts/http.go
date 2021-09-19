@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"atraf-server/pkg/authentication"
 	"atraf-server/pkg/middleware"
 	"atraf-server/pkg/rest"
 	"atraf-server/pkg/uid"
@@ -45,7 +46,7 @@ type Handler struct {
 
 func (h Handler) Create() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		auth := middleware.GetAuthContext(r)
+		auth := authentication.Context(r)
 
 		// set max request size
 		r.Body = http.MaxBytesReader(w, r.Body, AttachmentMaxSize)

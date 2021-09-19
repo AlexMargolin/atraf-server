@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"atraf-server/pkg/middleware"
+	"atraf-server/pkg/authentication"
 	"atraf-server/pkg/rest"
 	"atraf-server/pkg/uid"
 	"atraf-server/pkg/validate"
@@ -39,7 +39,7 @@ type Handler struct {
 func (h Handler) Create() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var request CreateRequest
-		auth := middleware.GetAuthContext(r)
+		auth := authentication.Context(r)
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 			rest.Error(w, http.StatusUnsupportedMediaType)

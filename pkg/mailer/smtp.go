@@ -30,8 +30,8 @@ func FromTemplate(filename string, data interface{}, subject string, from mail.A
 
 	headers["Subject"] = subject
 	headers["From"] = from.String()
-	headers["Content-Type"] = "text/html; charset=UTF-8"
 	headers["MIME-Version"] = "1.0"
+	headers["Content-Type"] = "text/html; charset=UTF-8"
 
 	for header, value := range headers {
 		if _, err := fmt.Fprintf(&message, "%s: %s\r\n", header, value); err != nil {
@@ -39,7 +39,6 @@ func FromTemplate(filename string, data interface{}, subject string, from mail.A
 		}
 	}
 
-	// Message body has to be separated by an additional line break
 	message.WriteString("\r\n")
 	tpl, err := template.ParseFiles(filename)
 	if err != nil {

@@ -19,7 +19,7 @@ const (
 
 const (
 	DefaultLimit = 9
-	MaxLimit     = 100
+	MaxLimit     = 20
 )
 
 type Cursor struct {
