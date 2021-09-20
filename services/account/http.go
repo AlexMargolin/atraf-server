@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"atraf-server/pkg/uid"
 	"atraf-server/services/users"
 
 	"atraf-server/pkg/authentication"
@@ -11,6 +12,11 @@ import (
 	"atraf-server/pkg/token"
 	"atraf-server/pkg/validate"
 )
+
+type ClientAuthData struct {
+	AccountId     uid.UID `json:"account_id"`
+	AccountActive bool    `json:"account_active"`
+}
 
 type RegisterRequest struct {
 	Email    string `json:"email" validate:"required,email"`
@@ -73,7 +79,10 @@ func (h Handler) Register() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusNoContent, nil)
+		rest.Success(w, http.StatusCreated, &ClientAuthData{
+			AccountId:     account.Id,
+			AccountActive: false,
+		})
 	}
 }
 
@@ -103,7 +112,10 @@ func (h Handler) Activate() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusNoContent, nil)
+		rest.Success(w, http.StatusOK, &ClientAuthData{
+			AccountId:     auth.AccountId,
+			AccountActive: true,
+		})
 	}
 }
 
@@ -132,7 +144,10 @@ func (h Handler) Login() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusNoContent, nil)
+		rest.Success(w, http.StatusOK, &ClientAuthData{
+			AccountId:     account.Id,
+			AccountActive: account.Active,
+		})
 	}
 }
 

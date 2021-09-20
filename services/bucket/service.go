@@ -30,7 +30,6 @@ func (s Service) Save(file multipart.File) (string, error) {
 		return "", err
 	}
 
-	// returns cursor back to start for any upcoming reads
 	if _, err := file.Seek(0, 0); err != nil {
 		return "", err
 	}
