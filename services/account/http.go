@@ -13,11 +13,6 @@ import (
 	"atraf-server/pkg/validate"
 )
 
-type ClientAuthData struct {
-	AccountId     uid.UID `json:"account_id"`
-	AccountActive bool    `json:"account_active"`
-}
-
 type RegisterRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
@@ -39,6 +34,11 @@ type ForgotRequest struct {
 type ResetRequest struct {
 	Token       string `json:"token" validate:"required"`
 	NewPassword string `json:"new_password" validate:"required"`
+}
+
+type AuthResponse struct {
+	AccountId     uid.UID `json:"account_id"`
+	AccountActive bool    `json:"account_active"`
 }
 
 type Handler struct {
@@ -79,7 +79,7 @@ func (h Handler) Register() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusCreated, &ClientAuthData{
+		rest.Success(w, http.StatusCreated, &AuthResponse{
 			AccountId:     account.Id,
 			AccountActive: false,
 		})
@@ -112,7 +112,7 @@ func (h Handler) Activate() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusOK, &ClientAuthData{
+		rest.Success(w, http.StatusOK, &AuthResponse{
 			AccountId:     auth.AccountId,
 			AccountActive: true,
 		})
@@ -144,7 +144,7 @@ func (h Handler) Login() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusOK, &ClientAuthData{
+		rest.Success(w, http.StatusOK, &AuthResponse{
 			AccountId:     account.Id,
 			AccountActive: account.Active,
 		})
