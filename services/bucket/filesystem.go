@@ -16,7 +16,7 @@ type FSBucket struct{}
 
 func (FSBucket) SaveFile(name string, path string, file multipart.File) (string, error) {
 	dir := fmt.Sprintf("%s/%s", UploadsBaseDir, path)
-	filename := dir + name
+	filename := dir + "/" + name
 
 	if _, err := os.Stat(dir); err != nil {
 		if err = os.MkdirAll(dir, os.ModePerm); err != nil {
