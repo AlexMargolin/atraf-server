@@ -16,7 +16,7 @@ type contextKey string
 
 const (
 	AccessTokenCookie = "atcId"
-	AccessTokenExpiry = time.Second * 5
+	AccessTokenExpiry = time.Minute * 10
 )
 
 const ContextKey contextKey = "AuthCtx"
