@@ -14,7 +14,7 @@ import (
 )
 
 type CreateRequest struct {
-	CommentFields
+	Fields
 	SourceId uid.UID `json:"source_id" validate:"required"`
 	ParentId uid.UID `json:"parent_id"`
 }
@@ -23,7 +23,7 @@ type CreateResponse struct {
 	Comment Comment `json:"comment"`
 }
 
-type UpdateRequest = CommentFields
+type UpdateRequest = Fields
 
 type ReadManyResponse struct {
 	Comments []Comment    `json:"comments"`
@@ -42,25 +42,25 @@ func (h Handler) Create() http.HandlerFunc {
 		auth := authentication.Context(r)
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			rest.Error(w, http.StatusUnsupportedMediaType)
+			rest.Error(w, err, http.StatusUnsupportedMediaType)
 			return
 		}
 
 		if err := h.validate.Struct(request); err != nil {
-			rest.Error(w, http.StatusUnprocessableEntity)
+			rest.Error(w, err, http.StatusUnprocessableEntity)
 			return
 		}
 
 		// Dependency(Users)
-		user, err := h.users.UserByAccountId(auth.AccountId)
+		__user, err := h.users.UserByAccountId(auth.AccountId)
 		if err != nil {
-			rest.Error(w, http.StatusBadRequest)
+			rest.Error(w, err, http.StatusBadRequest)
 			return
 		}
 
-		comment, err := h.service.NewComment(user.Id, request.SourceId, request.ParentId, request.CommentFields)
+		comment, err := h.service.NewComment(__user.Id, request.SourceId, request.ParentId, &request.Fields)
 		if err != nil {
-			rest.Error(w, http.StatusBadRequest)
+			rest.Error(w, err, http.StatusBadRequest)
 			return
 		}
 
@@ -76,22 +76,22 @@ func (h Handler) Update() http.HandlerFunc {
 
 		commentId, err := uid.FromString(chi.URLParam(r, "comment_id"))
 		if err != nil {
-			rest.Error(w, http.StatusUnprocessableEntity)
+			rest.Error(w, err, http.StatusUnprocessableEntity)
 			return
 		}
 
 		if err = json.NewDecoder(r.Body).Decode(&request); err != nil {
-			rest.Error(w, http.StatusUnsupportedMediaType)
+			rest.Error(w, err, http.StatusUnsupportedMediaType)
 			return
 		}
 
 		if err = h.validate.Struct(request); err != nil {
-			rest.Error(w, http.StatusUnprocessableEntity)
+			rest.Error(w, err, http.StatusUnprocessableEntity)
 			return
 		}
 
-		if err = h.service.UpdateComment(commentId, request); err != nil {
-			rest.Error(w, http.StatusBadRequest)
+		if err = h.service.UpdateComment(commentId, &request); err != nil {
+			rest.Error(w, err, http.StatusBadRequest)
 			return
 		}
 
@@ -101,16 +101,15 @@ func (h Handler) Update() http.HandlerFunc {
 
 func (h Handler) ReadMany() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		sourceId, err := uid.FromString(chi.URLParam(r, "source_id"))
 		if err != nil {
-			rest.Error(w, http.StatusUnprocessableEntity)
+			rest.Error(w, err, http.StatusUnprocessableEntity)
 			return
 		}
 
 		comments, err := h.service.CommentsBySourceId(sourceId)
 		if err != nil {
-			rest.Error(w, http.StatusInternalServerError)
+			rest.Error(w, err, http.StatusInternalServerError)
 			return
 		}
 
@@ -127,7 +126,7 @@ func (h Handler) ReadMany() http.HandlerFunc {
 		// Dependency(Users)
 		__users, err := h.users.UsersByIds(userIds)
 		if err != nil {
-			rest.Error(w, http.StatusInternalServerError)
+			rest.Error(w, err, http.StatusInternalServerError)
 			return
 		}
 

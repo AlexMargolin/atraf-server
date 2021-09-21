@@ -18,46 +18,46 @@ type Post struct {
 	UpdatedAt  time.Time `json:"updated_at"`
 }
 
-// PostFields is a struct representing all Post values
+// Fields is a struct representing all Post values
 // which can be modified by the client.
-type PostFields struct {
-	Title string         `validate:"required"`
-	Body  string         `validate:"required"`
-	File  multipart.File `validate:"required"`
+type Fields struct {
+	Title string         `json:"title" validate:"required"`
+	Body  string         `json:"body" validate:"required"`
+	File  multipart.File `json:"file" validate:"required"`
 }
 
 type Storage interface {
 	One(postId uid.UID) (Post, error)
 	Many(pagination *middleware.PaginationContext) ([]Post, error)
-	Insert(userId uid.UID, fields *PostFields) (uid.UID, error)
-	Update(postId uid.UID, fields *PostFields) error
+	Insert(userId uid.UID, fields *Fields) (uid.UID, error)
+	Update(postId uid.UID, fields *Fields) error
 }
 
 type Service struct {
 	storage Storage
 }
 
+func (s Service) NewPost(userId uid.UID, f *Fields) (uid.UID, error) {
+	return s.storage.Insert(userId, f)
+}
+
 func (s Service) PostById(postId uid.UID) (Post, error) {
 	return s.storage.One(postId)
 }
 
-func (s Service) ListPosts(pagination *middleware.PaginationContext) ([]Post, error) {
-	return s.storage.Many(pagination)
+func (s Service) Posts(p *middleware.PaginationContext) ([]Post, error) {
+	return s.storage.Many(p)
 }
 
-func (s Service) NewPost(userId uid.UID, fields *PostFields) (uid.UID, error) {
-	return s.storage.Insert(userId, fields)
+func (s Service) UpdatePost(postId uid.UID, f *Fields) error {
+	return s.storage.Update(postId, f)
 }
 
-func (s Service) UpdatePost(postId uid.UID, fields *PostFields) error {
-	return s.storage.Update(postId, fields)
-}
-
-func UniqueUserIds(posts []Post) []uid.UID {
+func UniqueUserIds(p []Post) []uid.UID {
 	userIds := make([]uid.UID, 0)
 	m := make(map[uid.UID]bool, 0)
 
-	for _, post := range posts {
+	for _, post := range p {
 		if m[post.UserId] {
 			continue
 		}
@@ -68,6 +68,6 @@ func UniqueUserIds(posts []Post) []uid.UID {
 	return userIds
 }
 
-func NewService(storage Storage) *Service {
-	return &Service{storage}
+func NewService(s Storage) *Service {
+	return &Service{s}
 }

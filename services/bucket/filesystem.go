@@ -14,7 +14,7 @@ const (
 
 type FSBucket struct{}
 
-func (FSBucket) SaveFile(name string, path string, file multipart.File) (string, error) {
+func (FSBucket) SaveFile(name string, path string, f multipart.File) (string, error) {
 	dir := fmt.Sprintf("%s/%s", UploadsBaseDir, path)
 	filename := dir + "/" + name
 
@@ -30,7 +30,7 @@ func (FSBucket) SaveFile(name string, path string, file multipart.File) (string,
 	}
 	defer dst.Close()
 
-	if _, err = io.Copy(dst, file); err != nil {
+	if _, err = io.Copy(dst, f); err != nil {
 		return "", err
 	}
 

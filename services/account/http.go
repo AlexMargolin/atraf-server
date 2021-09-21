@@ -59,34 +59,34 @@ func (h Handler) Register() http.HandlerFunc {
 		var request RegisterRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			rest.Error(w, http.StatusUnsupportedMediaType)
+			rest.Error(w, err, http.StatusUnsupportedMediaType)
 			return
 		}
 
 		if err := h.validate.Struct(request); err != nil {
-			rest.Error(w, http.StatusUnprocessableEntity)
+			rest.Error(w, err, http.StatusUnprocessableEntity)
 			return
 		}
 
 		account, err := h.service.Register(request.Email, request.Nickname, request.Password)
 		if err != nil {
-			rest.Error(w, http.StatusConflict)
+			rest.Error(w, err, http.StatusConflict)
 			return
 		}
 
 		// Dependency(Users)
 		// This could be a webhook
-		userFields := &users.UserFields{
+		userFields := &users.Fields{
 			Email:    account.Email,
 			Nickname: account.Nickname,
 		}
 		if h.users.NewUser(account.Id, userFields) != nil {
-			rest.Error(w, http.StatusInternalServerError)
+			rest.Error(w, err, http.StatusInternalServerError)
 			return
 		}
 
 		if err = authentication.SetCookie(w, account.Id, account.Active); err != nil {
-			rest.Error(w, http.StatusInternalServerError)
+			rest.Error(w, err, http.StatusInternalServerError)
 			return
 		}
 
@@ -102,29 +102,29 @@ func (h Handler) Activate() http.HandlerFunc {
 		auth := authentication.Context(r)
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			rest.Error(w, http.StatusUnsupportedMediaType)
+			rest.Error(w, err, http.StatusUnsupportedMediaType)
 			return
 		}
 
 		if err := h.validate.Struct(request); err != nil {
-			rest.Error(w, http.StatusUnprocessableEntity)
+			rest.Error(w, err, http.StatusUnprocessableEntity)
 			return
 		}
 
 		if err := h.service.Activate(auth.AccountId, request.Code); err != nil {
-			rest.Error(w, http.StatusBadRequest)
+			rest.Error(w, err, http.StatusBadRequest)
 			return
 		}
 
 		account, err := h.service.ByAccountId(auth.AccountId)
 		if err != nil {
-			rest.Error(w, http.StatusInternalServerError)
+			rest.Error(w, err, http.StatusInternalServerError)
 			return
 		}
 
 		// Issue New Access Token
 		if err = authentication.SetCookie(w, account.Id, account.Active); err != nil {
-			rest.Error(w, http.StatusInternalServerError)
+			rest.Error(w, err, http.StatusInternalServerError)
 			return
 		}
 
@@ -139,23 +139,23 @@ func (h Handler) Login() http.HandlerFunc {
 		var request LoginRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			rest.Error(w, http.StatusUnsupportedMediaType)
+			rest.Error(w, err, http.StatusUnsupportedMediaType)
 			return
 		}
 
 		if err := h.validate.Struct(request); err != nil {
-			rest.Error(w, http.StatusUnprocessableEntity)
+			rest.Error(w, err, http.StatusUnprocessableEntity)
 			return
 		}
 
 		account, err := h.service.Login(request.Email, request.Password)
 		if err != nil {
-			rest.Error(w, http.StatusUnauthorized)
+			rest.Error(w, err, http.StatusUnauthorized)
 			return
 		}
 
 		if err = authentication.SetCookie(w, account.Id, account.Active); err != nil {
-			rest.Error(w, http.StatusInternalServerError)
+			rest.Error(w, err, http.StatusInternalServerError)
 			return
 		}
 
@@ -170,12 +170,12 @@ func (h Handler) Forgot() http.HandlerFunc {
 		var request ForgotRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			rest.Error(w, http.StatusUnsupportedMediaType)
+			rest.Error(w, err, http.StatusUnsupportedMediaType)
 			return
 		}
 
 		if err := h.validate.Struct(request); err != nil {
-			rest.Error(w, http.StatusUnprocessableEntity)
+			rest.Error(w, err, http.StatusUnprocessableEntity)
 			return
 		}
 
@@ -194,29 +194,29 @@ func (h Handler) Reset() http.HandlerFunc {
 		var request ResetRequest
 
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-			rest.Error(w, http.StatusUnsupportedMediaType)
+			rest.Error(w, err, http.StatusUnsupportedMediaType)
 			return
 		}
 
 		if err := h.validate.Struct(request); err != nil {
-			rest.Error(w, http.StatusUnprocessableEntity)
+			rest.Error(w, err, http.StatusUnprocessableEntity)
 			return
 		}
 
 		t, err := token.VerifyResetToken(request.Token)
 		if err != nil {
-			rest.Error(w, http.StatusUnauthorized)
+			rest.Error(w, err, http.StatusUnauthorized)
 			return
 		}
 
 		account, err := h.service.ByAccountId(t.AccountId)
 		if err != nil {
-			rest.Error(w, http.StatusUnauthorized)
+			rest.Error(w, err, http.StatusUnauthorized)
 			return
 		}
 
 		if err = h.service.UpdatePassword(account.Id, request.NewPassword); err != nil {
-			rest.Error(w, http.StatusBadRequest)
+			rest.Error(w, err, http.StatusInternalServerError)
 			return
 		}
 

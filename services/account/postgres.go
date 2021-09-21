@@ -26,11 +26,33 @@ type Postgres struct {
 	db *sqlx.DB
 }
 
-func (p Postgres) NewAccount(email string, nickname string, passwordHash []byte) (Account, error) {
+func (p Postgres) Insert(email string, nickname string, passwordHash []byte) (Account, error) {
 	var account PostgresAccount
 
 	query := `INSERT INTO accounts (email, password_hash, nickname) VALUES ($1, $2, $3) RETURNING *`
 	if err := p.db.Get(&account, query, email, passwordHash, nickname); err != nil {
+		return Account{}, err
+	}
+
+	return prepareOne(account), nil
+}
+
+func (p Postgres) ByEmail(email string) (Account, error) {
+	var account PostgresAccount
+
+	query := `SELECT * FROM accounts WHERE email = $1 LIMIT 1`
+	if err := p.db.Get(&account, query, email); err != nil {
+		return Account{}, err
+	}
+
+	return prepareOne(account), nil
+}
+
+func (p Postgres) ByAccountId(accountId uid.UID) (Account, error) {
+	var account PostgresAccount
+
+	query := `SELECT * FROM accounts WHERE uuid = $1 LIMIT 1`
+	if err := p.db.Get(&account, query, accountId); err != nil {
 		return Account{}, err
 	}
 
@@ -78,28 +100,6 @@ func (p Postgres) SetActive(accountId uid.UID, activationCode string) error {
 	}
 
 	return nil
-}
-
-func (p Postgres) ByAccountId(accountId uid.UID) (Account, error) {
-	var account PostgresAccount
-
-	query := `SELECT * FROM accounts WHERE uuid = $1 LIMIT 1`
-	if err := p.db.Get(&account, query, accountId); err != nil {
-		return Account{}, err
-	}
-
-	return prepareOne(account), nil
-}
-
-func (p Postgres) ByEmail(email string) (Account, error) {
-	var account PostgresAccount
-
-	query := `SELECT * FROM accounts WHERE email = $1 LIMIT 1`
-	if err := p.db.Get(&account, query, email); err != nil {
-		return Account{}, err
-	}
-
-	return prepareOne(account), nil
 }
 
 func (p Postgres) UpdatePassword(accountId uid.UID, passwordHash []byte) error {

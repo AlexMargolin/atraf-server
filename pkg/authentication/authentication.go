@@ -94,12 +94,12 @@ func Middleware(activated bool) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			claims, err := ReadCookie(r)
 			if err != nil {
-				rest.Error(w, http.StatusUnauthorized)
+				rest.Error(w, err, http.StatusUnauthorized)
 				return
 			}
 
 			if activated != claims.AccountActive {
-				rest.Error(w, http.StatusForbidden)
+				rest.Error(w, err, http.StatusForbidden)
 				return
 			}
 

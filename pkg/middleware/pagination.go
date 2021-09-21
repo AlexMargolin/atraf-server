@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -53,13 +54,14 @@ func Pagination(next http.Handler) http.Handler {
 
 		if cursor != "" {
 			if err := DecodeCursor(cursor, &pagination.Cursor); err != nil {
-				rest.Error(w, http.StatusUnprocessableEntity)
+				rest.Error(w, err, http.StatusUnprocessableEntity)
 				return
 			}
 		}
 
 		if pagination.Limit < 1 || pagination.Limit > MaxLimit {
-			rest.Error(w, http.StatusUnprocessableEntity)
+			err := errors.New("invalid pagination params")
+			rest.Error(w, err, http.StatusUnprocessableEntity)
 			return
 		}
 

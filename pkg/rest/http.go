@@ -2,6 +2,7 @@ package rest
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 )
 
@@ -38,8 +39,11 @@ func Success(w http.ResponseWriter, code int, data interface{}) {
 	}
 }
 
-func Error(w http.ResponseWriter, code int) {
+func Error(w http.ResponseWriter, err error, code int) {
 	SetHeaders(w)
+
+	log.SetFlags(log.Lshortfile)
+	log.Println(err)
 
 	w.WriteHeader(code)
 }

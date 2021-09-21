@@ -5,13 +5,14 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"atraf-server/app"
+
 	"atraf-server/services/account"
 	"atraf-server/services/bucket"
 	"atraf-server/services/comments"
 	"atraf-server/services/posts"
 	"atraf-server/services/users"
 
-	"atraf-server/app"
 	"atraf-server/pkg/authentication"
 	"atraf-server/pkg/middleware"
 	"atraf-server/pkg/validate"
@@ -86,5 +87,7 @@ func main() {
 		router.Put("/comments/{comment_id}", commentsHandler.Update())
 	})
 
-	log.Fatal(app.ServeHTTP(router))
+	if err = app.ServeHTTP(router); err != nil {
+		log.Fatal()
+	}
 }

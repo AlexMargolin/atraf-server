@@ -71,25 +71,25 @@ func (p Postgres) Many(pc *middleware.PaginationContext) ([]Post, error) {
 	return p.prepareMany(posts), nil
 }
 
-func (p Postgres) Insert(userId uid.UID, fields *PostFields) (uid.UID, error) {
+func (p Postgres) Insert(userId uid.UID, f *Fields) (uid.UID, error) {
 	var uuid uid.UID
 
-	attachmentPath, err := p.bucket.Save(fields.File)
+	attachmentPath, err := p.bucket.Save(f.File)
 	if err != nil {
 		return uuid, err
 	}
 
 	query := "INSERT INTO posts (user_uuid, title, body, attachment) VALUES ($1, $2, $3, $4) RETURNING uuid"
-	if err = p.db.Get(&uuid, query, userId, fields.Title, fields.Body, attachmentPath); err != nil {
+	if err = p.db.Get(&uuid, query, userId, f.Title, f.Body, attachmentPath); err != nil {
 		return uuid, err
 	}
 
 	return uuid, nil
 }
 
-func (p Postgres) Update(postId uid.UID, fields *PostFields) error {
+func (p Postgres) Update(postId uid.UID, f *Fields) error {
 	query := `UPDATE posts SET title = $2, body = $3 WHERE uuid = $1`
-	result, err := p.db.Exec(query, postId, fields.Title, fields.Body)
+	result, err := p.db.Exec(query, postId, f.Title, f.Body)
 	if err != nil {
 		return err
 	}

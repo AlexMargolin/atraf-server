@@ -24,6 +24,15 @@ type Postgres struct {
 	db *sqlx.DB
 }
 
+func (p Postgres) Insert(accountId uid.UID, f *Fields) error {
+	query := `INSERT INTO users (account_uuid, email, nickname, profile_picture) VALUES ($1, $2, $3, $4)`
+	if _, err := p.db.Exec(query, accountId, f.Email, f.Nickname, f.ProfilePicture); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (p Postgres) ById(userId uid.UID) (User, error) {
 	var user PostgresUser
 
@@ -63,15 +72,6 @@ func (p Postgres) ByAccountId(accountId uid.UID) (User, error) {
 	return p.prepareOne(user), nil
 }
 
-func (p Postgres) Insert(accountId uid.UID, fields *UserFields) error {
-	query := `INSERT INTO users (account_uuid, email, nickname, profile_picture) VALUES ($1, $2, $3, $4)`
-	if _, err := p.db.Exec(query, accountId, fields.Email, fields.Nickname, fields.ProfilePicture); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (p Postgres) prepareMany(pu []PostgresUser) []User {
 	var users = make([]User, 0)
 
@@ -89,6 +89,7 @@ func (Postgres) prepareOne(pu PostgresUser) User {
 		Nickname:       pu.Nickname,
 		ProfilePicture: pu.ProfilePicture.String,
 		CreatedAt:      pu.CreatedAt,
+		UpdatedAt:      pu.UpdatedAt.Time,
 	}
 }
 

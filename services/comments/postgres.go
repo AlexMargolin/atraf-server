@@ -26,35 +26,24 @@ type Postgres struct {
 	db *sqlx.DB
 }
 
-func (p Postgres) Many(sourceId uid.UID) ([]Comment, error) {
-	var comments []PostgresComment
-
-	query := `SELECT * FROM comments WHERE source_uuid = $1 ORDER BY created_at DESC`
-	if err := p.db.Select(&comments, query, sourceId); err != nil {
-		return nil, err
-	}
-
-	return prepareMany(comments), nil
-}
-
-func (p Postgres) Insert(userId uid.UID, sourceId uid.UID, parentId uid.UID, fields CommentFields) (Comment, error) {
-	var comment PostgresComment
+func (p Postgres) Insert(userId uid.UID, sourceId uid.UID, parentId uid.UID, f *Fields) (Comment, error) {
+	var c PostgresComment
 
 	query := `
 	INSERT INTO comments (user_uuid, source_uuid, parent_uuid, body) 
 	VALUES ($1, $2, $3, $4) 
 	RETURNING *`
 
-	if err := p.db.Get(&comment, query, userId, sourceId, parentId, fields.Body); err != nil {
+	if err := p.db.Get(&c, query, userId, sourceId, parentId, f.Body); err != nil {
 		return Comment{}, err
 	}
 
-	return prepareOne(comment), nil
+	return prepareOne(c), nil
 }
 
-func (p Postgres) Update(commentId uid.UID, fields CommentFields) error {
+func (p Postgres) Update(commentId uid.UID, f *Fields) error {
 	query := `UPDATE comments SET body = $2 WHERE uuid = $1`
-	result, err := p.db.Exec(query, commentId, fields.Body)
+	result, err := p.db.Exec(query, commentId, f.Body)
 	if err != nil {
 		return err
 	}
@@ -69,6 +58,17 @@ func (p Postgres) Update(commentId uid.UID, fields CommentFields) error {
 	}
 
 	return nil
+}
+
+func (p Postgres) Many(sourceId uid.UID) ([]Comment, error) {
+	var c []PostgresComment
+
+	query := `SELECT * FROM comments WHERE source_uuid = $1 ORDER BY created_at DESC`
+	if err := p.db.Select(&c, query, sourceId); err != nil {
+		return nil, err
+	}
+
+	return prepareMany(c), nil
 }
 
 func prepareOne(pc PostgresComment) Comment {

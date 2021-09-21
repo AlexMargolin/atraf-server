@@ -24,13 +24,13 @@ type Service struct {
 	bucket Bucket
 }
 
-func (s Service) Save(file multipart.File) (string, error) {
+func (s Service) Save(f multipart.File) (string, error) {
 	buffer := make([]byte, 512)
-	if _, err := file.Read(buffer); err != nil {
+	if _, err := f.Read(buffer); err != nil {
 		return "", err
 	}
 
-	if _, err := file.Seek(0, 0); err != nil {
+	if _, err := f.Seek(0, 0); err != nil {
 		return "", err
 	}
 
@@ -44,7 +44,7 @@ func (s Service) Save(file multipart.File) (string, error) {
 		return "", err
 	}
 
-	path, err := s.bucket.SaveFile(filename, filepath, file)
+	path, err := s.bucket.SaveFile(filename, filepath, f)
 	if err != nil {
 		return "", err
 	}

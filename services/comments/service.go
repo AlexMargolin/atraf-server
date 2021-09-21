@@ -16,27 +16,27 @@ type Comment struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// CommentFields is a struct representing all Comment values
+// Fields is a struct representing all Comment values
 // which can be modified by the client.
-type CommentFields struct {
+type Fields struct {
 	Body string `json:"body" validate:"required"`
 }
 
 type Storage interface {
+	Insert(userId uid.UID, sourceId uid.UID, parentId uid.UID, data *Fields) (Comment, error)
+	Update(commentId uid.UID, data *Fields) error
 	Many(sourceId uid.UID) ([]Comment, error)
-	Insert(userId uid.UID, sourceId uid.UID, parentId uid.UID, fields CommentFields) (Comment, error)
-	Update(commentId uid.UID, fields CommentFields) error
 }
 
 type Service struct {
 	storage Storage
 }
 
-func (s Service) NewComment(userId uid.UID, sourceId uid.UID, parentId uid.UID, fields CommentFields) (Comment, error) {
+func (s Service) NewComment(userId uid.UID, sourceId uid.UID, parentId uid.UID, fields *Fields) (Comment, error) {
 	return s.storage.Insert(userId, sourceId, parentId, fields)
 }
 
-func (s Service) UpdateComment(commentId uid.UID, fields CommentFields) error {
+func (s Service) UpdateComment(commentId uid.UID, fields *Fields) error {
 	return s.storage.Update(commentId, fields)
 }
 

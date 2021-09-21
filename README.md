@@ -48,6 +48,7 @@
 46. attachment id and post id foreign key
 47. add honeypot(?)
 48. rate limit actions which send emails
+49. change profile picture to gravatar
 
 # Features
 

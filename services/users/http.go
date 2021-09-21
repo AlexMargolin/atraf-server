@@ -23,13 +23,13 @@ func (h Handler) ReadOne() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userId, err := uid.FromString(chi.URLParam(r, "user_id"))
 		if err != nil {
-			rest.Error(w, http.StatusUnprocessableEntity)
+			rest.Error(w, err, http.StatusUnprocessableEntity)
 			return
 		}
 
 		user, err := h.service.UserById(userId)
 		if err != nil {
-			rest.Error(w, http.StatusNotFound)
+			rest.Error(w, err, http.StatusNotFound)
 			return
 		}
 

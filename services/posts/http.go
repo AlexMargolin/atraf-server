@@ -6,12 +6,13 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"atraf-server/services/users"
+
 	"atraf-server/pkg/authentication"
 	"atraf-server/pkg/middleware"
 	"atraf-server/pkg/rest"
 	"atraf-server/pkg/uid"
 	"atraf-server/pkg/validate"
-	"atraf-server/services/users"
 )
 
 const (
@@ -19,13 +20,13 @@ const (
 	AttachmentFormKey = "attachment"
 )
 
-type CreateRequest = PostFields
+type CreateRequest = Fields
 
 type CreateResponse struct {
 	PostId uid.UID `json:"post_id"`
 }
 
-type UpdateRequest = PostFields
+type UpdateRequest = Fields
 
 type ReadOneResponse struct {
 	Post Post       `json:"post"`
@@ -53,14 +54,14 @@ func (h Handler) Create() http.HandlerFunc {
 
 		// set max size allowed before writing to the filesystem.
 		if err := r.ParseMultipartForm(AttachmentMaxSize); err != nil {
-			rest.Error(w, http.StatusRequestEntityTooLarge)
+			rest.Error(w, err, http.StatusRequestEntityTooLarge)
 			return
 		}
 		defer r.Body.Close()
 
 		file, _, err := r.FormFile(AttachmentFormKey)
 		if err != nil {
-			rest.Error(w, http.StatusUnprocessableEntity)
+			rest.Error(w, err, http.StatusUnprocessableEntity)
 			return
 		}
 		defer file.Close()
@@ -72,20 +73,20 @@ func (h Handler) Create() http.HandlerFunc {
 		}
 
 		if err = h.validate.Struct(request); err != nil {
-			rest.Error(w, http.StatusUnprocessableEntity)
+			rest.Error(w, err, http.StatusUnprocessableEntity)
 			return
 		}
 
 		// Dependency(Users)
-		user, err := h.users.UserByAccountId(auth.AccountId)
+		__user, err := h.users.UserByAccountId(auth.AccountId)
 		if err != nil {
-			rest.Error(w, http.StatusInternalServerError)
+			rest.Error(w, err, http.StatusInternalServerError)
 			return
 		}
 
-		postId, err := h.service.NewPost(user.Id, request)
+		postId, err := h.service.NewPost(__user.Id, request)
 		if err != nil {
-			rest.Error(w, http.StatusBadRequest)
+			rest.Error(w, err, http.StatusBadRequest)
 			return
 		}
 
@@ -101,22 +102,22 @@ func (h Handler) Update() http.HandlerFunc {
 
 		postId, err := uid.FromString(chi.URLParam(r, "post_id"))
 		if err != nil {
-			rest.Error(w, http.StatusUnprocessableEntity)
+			rest.Error(w, err, http.StatusUnprocessableEntity)
 			return
 		}
 
 		if err = json.NewDecoder(r.Body).Decode(&request); err != nil {
-			rest.Error(w, http.StatusUnsupportedMediaType)
+			rest.Error(w, err, http.StatusUnsupportedMediaType)
 			return
 		}
 
 		if err = h.validate.Struct(request); err != nil {
-			rest.Error(w, http.StatusUnprocessableEntity)
+			rest.Error(w, err, http.StatusUnprocessableEntity)
 			return
 		}
 
 		if err = h.service.UpdatePost(postId, &request); err != nil {
-			rest.Error(w, http.StatusBadRequest)
+			rest.Error(w, err, http.StatusBadRequest)
 			return
 		}
 
@@ -128,26 +129,26 @@ func (h Handler) ReadOne() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		postId, err := uid.FromString(chi.URLParam(r, "post_id"))
 		if err != nil {
-			rest.Error(w, http.StatusUnprocessableEntity)
+			rest.Error(w, err, http.StatusUnprocessableEntity)
 			return
 		}
 
 		post, err := h.service.PostById(postId)
 		if err != nil {
-			rest.Error(w, http.StatusNotFound)
+			rest.Error(w, err, http.StatusNotFound)
 			return
 		}
 
 		// Dependency(Users)
-		user, err := h.users.UserById(post.UserId)
+		__user, err := h.users.UserById(post.UserId)
 		if err != nil {
-			rest.Error(w, http.StatusInternalServerError)
+			rest.Error(w, err, http.StatusInternalServerError)
 			return
 		}
 
 		rest.Success(w, http.StatusOK, &ReadOneResponse{
 			post,
-			user,
+			__user,
 		})
 	}
 }
@@ -162,14 +163,14 @@ func (h Handler) ReadMany() http.HandlerFunc {
 		// page available for pagination
 		pagination.Limit++
 
-		posts, err := h.service.ListPosts(pagination)
+		posts, err := h.service.Posts(pagination)
 		if err != nil {
-			rest.Error(w, http.StatusInternalServerError)
+			rest.Error(w, err, http.StatusInternalServerError)
 			return
 		}
 
 		if len(posts) == 0 {
-			rest.Error(w, http.StatusNotFound)
+			rest.Error(w, err, http.StatusNotFound)
 			return
 		}
 
@@ -187,7 +188,7 @@ func (h Handler) ReadMany() http.HandlerFunc {
 			})
 
 			if err != nil {
-				rest.Error(w, http.StatusInternalServerError)
+				rest.Error(w, err, http.StatusInternalServerError)
 				return
 			}
 		}
@@ -195,16 +196,16 @@ func (h Handler) ReadMany() http.HandlerFunc {
 		userIds := UniqueUserIds(posts)
 
 		// Dependency(Users)
-		postsUsers, err := h.users.UsersByIds(userIds)
+		__users, err := h.users.UsersByIds(userIds)
 		if err != nil {
-			rest.Error(w, http.StatusInternalServerError)
+			rest.Error(w, err, http.StatusInternalServerError)
 			return
 		}
 
 		rest.Success(w, http.StatusOK, &ReadManyResponse{
 			cursor,
 			posts,
-			postsUsers,
+			__users,
 		})
 	}
 }
