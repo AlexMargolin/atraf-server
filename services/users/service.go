@@ -8,27 +8,25 @@ import (
 
 type User struct {
 	Id             uid.UID   `json:"id"`
-	Email          string    `json:"email"`
-	FirstName      string    `json:"first_name"`
-	LastName       string    `json:"last_name"`
+	Email          string    `json:"-"`
+	Nickname       string    `json:"nickname"`
 	ProfilePicture string    `json:"profile_picture"`
-	CreatedAt      time.Time `json:"created_at"`
+	CreatedAt      time.Time `json:"-"`
 }
 
 // UserFields is a struct representing all Post values
 // which can be modified by the client.
 type UserFields struct {
-	FirstName      string `json:"first_name"`
-	LastName       string `json:"last_name"`
-	ProfilePicture string `json:"profile_picture"`
+	Nickname       string `json:"nickname" validate:"required"`
 	Email          string `json:"email" validate:"required,email"`
+	ProfilePicture string `json:"profile_picture"`
 }
 
 type Storage interface {
 	ById(userId uid.UID) (User, error)
 	ByIds(userIds []uid.UID) ([]User, error)
 	ByAccountId(accountID uid.UID) (User, error)
-	Insert(accountId uid.UID, fields UserFields) error
+	Insert(accountId uid.UID, fields *UserFields) error
 }
 
 type Service struct {
@@ -47,7 +45,7 @@ func (s Service) UserByAccountId(accountId uid.UID) (User, error) {
 	return s.storage.ByAccountId(accountId)
 }
 
-func (s Service) NewUser(accountId uid.UID, fields UserFields) error {
+func (s Service) NewUser(accountId uid.UID, fields *UserFields) error {
 	return s.storage.Insert(accountId, fields)
 }
 

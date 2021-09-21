@@ -13,8 +13,7 @@ type PostgresUser struct {
 	Uuid           uid.UID        `db:"uuid"`
 	AccountUuid    uid.UID        `db:"account_uuid"`
 	Email          sql.NullString `db:"email"`
-	FirstName      sql.NullString `db:"first_name"`
-	LastName       sql.NullString `db:"last_name"`
+	Nickname       string         `db:"nickname"`
 	ProfilePicture sql.NullString `db:"profile_picture"`
 	CreatedAt      time.Time      `db:"created_at"`
 	UpdatedAt      sql.NullTime   `db:"updated_at"`
@@ -64,9 +63,9 @@ func (p Postgres) ByAccountId(accountId uid.UID) (User, error) {
 	return p.prepareOne(user), nil
 }
 
-func (p Postgres) Insert(accountId uid.UID, fields UserFields) error {
-	query := `INSERT INTO users (account_uuid, email, first_name, last_name, profile_picture) VALUES ($1, $2, $3, $4, $5)`
-	if _, err := p.db.Exec(query, accountId, fields.Email, fields.FirstName, fields.LastName, fields.ProfilePicture); err != nil {
+func (p Postgres) Insert(accountId uid.UID, fields *UserFields) error {
+	query := `INSERT INTO users (account_uuid, email, nickname, profile_picture) VALUES ($1, $2, $3, $4)`
+	if _, err := p.db.Exec(query, accountId, fields.Email, fields.Nickname, fields.ProfilePicture); err != nil {
 		return err
 	}
 
@@ -87,8 +86,7 @@ func (Postgres) prepareOne(pu PostgresUser) User {
 	return User{
 		Id:             pu.Uuid,
 		Email:          pu.Email.String,
-		FirstName:      pu.FirstName.String,
-		LastName:       pu.LastName.String,
+		Nickname:       pu.Nickname,
 		ProfilePicture: pu.ProfilePicture.String,
 		CreatedAt:      pu.CreatedAt,
 	}

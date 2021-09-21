@@ -64,7 +64,11 @@ func (h Handler) Register() http.HandlerFunc {
 
 		// Dependency(Users)
 		// This could be a webhook
-		if h.users.NewUser(account.Id, users.UserFields{Email: account.Email}) != nil {
+		userFields := &users.UserFields{
+			Email:    account.Email,
+			Nickname: account.Nickname,
+		}
+		if h.users.NewUser(account.Id, userFields) != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
 		}
