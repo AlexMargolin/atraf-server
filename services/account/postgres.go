@@ -16,6 +16,7 @@ type PostgresAccount struct {
 	PasswordHash   []byte         `db:"password_hash"`
 	Active         bool           `db:"active"`
 	ActivationCode sql.NullString `db:"activation_code"`
+	Nickname       string         `db:"nickname"`
 	CreatedAt      time.Time      `db:"created_at"`
 	UpdatedAt      sql.NullTime   `db:"updated_at"`
 	DeletedAt      sql.NullTime   `db:"deleted_at"`
@@ -25,11 +26,11 @@ type Postgres struct {
 	db *sqlx.DB
 }
 
-func (p Postgres) NewAccount(email string, passwordHash []byte) (Account, error) {
+func (p Postgres) NewAccount(email string, nickname string, passwordHash []byte) (Account, error) {
 	var account PostgresAccount
 
-	query := `INSERT INTO accounts (email, password_hash) VALUES ($1, $2) RETURNING *`
-	if err := p.db.Get(&account, query, email, passwordHash); err != nil {
+	query := `INSERT INTO accounts (email, password_hash, nickname) VALUES ($1, $2, $3) RETURNING *`
+	if err := p.db.Get(&account, query, email, passwordHash, nickname); err != nil {
 		return Account{}, err
 	}
 
@@ -59,6 +60,7 @@ func (p Postgres) SetActive(accountId uid.UID, activationCode string) error {
 	SET active = true, 
 	    activation_code = NULL
 	WHERE uuid = $1 
+	  AND active = false
 	  AND activation_code = $2`
 
 	result, err := p.db.Exec(query, accountId, activationCode)
@@ -127,6 +129,7 @@ func prepareOne(pa PostgresAccount) Account {
 		PasswordHash:   pa.PasswordHash,
 		Active:         pa.Active,
 		ActivationCode: pa.ActivationCode.String,
+		Nickname:       pa.Nickname,
 		CreatedAt:      pa.CreatedAt,
 		UpdatedAt:      pa.UpdatedAt.Time,
 	}

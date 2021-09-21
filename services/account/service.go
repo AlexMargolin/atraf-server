@@ -19,12 +19,13 @@ type Account struct {
 	PasswordHash   []byte    `json:"-"`
 	ActivationCode string    `json:"-"`
 	Active         bool      `json:"active"`
+	Nickname       string    `json:"nickname"`
 	CreatedAt      time.Time `json:"-"`
 	UpdatedAt      time.Time `json:"-"`
 }
 
 type Storage interface {
-	NewAccount(email string, passwordHash []byte) (Account, error)
+	NewAccount(email string, nickname string, passwordHash []byte) (Account, error)
 	ByEmail(email string) (Account, error)
 	ByAccountId(accountId uid.UID) (Account, error)
 	SetPending(accountId uid.UID) (string, error)
@@ -36,13 +37,17 @@ type Service struct {
 	storage Storage
 }
 
-func (s Service) Register(email string, password string) (Account, error) {
+func (s Service) ByAccountId(accountId uid.UID) (Account, error) {
+	return s.storage.ByAccountId(accountId)
+}
+
+func (s Service) Register(email string, nickname string, password string) (Account, error) {
 	passwordHash, err := s.newPasswordHash(password)
 	if err != nil {
 		return Account{}, err
 	}
 
-	account, err := s.storage.NewAccount(email, passwordHash)
+	account, err := s.storage.NewAccount(email, nickname, passwordHash)
 	if err != nil {
 		return Account{}, err
 	}

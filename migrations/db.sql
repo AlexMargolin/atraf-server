@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS accounts
     password_hash   text      NOT NULL,
     active          bool                           default false,
     activation_code text                           default (floor(random() * (999999 - 100000 + 1) + 100000)),
+    nickname        text      NOT NULL,
     created_at      timestamp NOT NULL             default current_timestamp,
     updated_at      timestamp,
     deleted_at      timestamp

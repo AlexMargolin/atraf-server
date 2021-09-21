@@ -14,6 +14,7 @@ import (
 
 type RegisterRequest struct {
 	Email    string `json:"email" validate:"required,email"`
+	Nickname string `json:"nickname" validate:"required"`
 	Password string `json:"password" validate:"required"`
 }
 
@@ -55,7 +56,7 @@ func (h Handler) Register() http.HandlerFunc {
 			return
 		}
 
-		account, err := h.service.Register(request.Email, request.Password)
+		account, err := h.service.Register(request.Email, request.Nickname, request.Password)
 		if err != nil {
 			rest.Error(w, http.StatusConflict)
 			return
@@ -68,14 +69,12 @@ func (h Handler) Register() http.HandlerFunc {
 			return
 		}
 
-		if err = authentication.SetCookie(w, account.Id, false); err != nil {
+		if err = authentication.SetCookie(w, account.Id, account.Active); err != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
 		}
 
-		rest.Success(w, http.StatusCreated, &Account{
-			Active: false,
-		})
+		rest.Success(w, http.StatusCreated, account)
 	}
 }
 
@@ -99,15 +98,19 @@ func (h Handler) Activate() http.HandlerFunc {
 			return
 		}
 
-		// Issue New Access Token
-		if err := authentication.SetCookie(w, auth.AccountId, true); err != nil {
+		account, err := h.service.ByAccountId(auth.AccountId)
+		if err != nil {
 			rest.Error(w, http.StatusInternalServerError)
 			return
 		}
 
-		rest.Success(w, http.StatusOK, &Account{
-			Active: true,
-		})
+		// Issue New Access Token
+		if err = authentication.SetCookie(w, account.Id, account.Active); err != nil {
+			rest.Error(w, http.StatusInternalServerError)
+			return
+		}
+
+		rest.Success(w, http.StatusOK, account)
 	}
 }
 
@@ -136,9 +139,7 @@ func (h Handler) Login() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusOK, &Account{
-			Active: account.Active,
-		})
+		rest.Success(w, http.StatusOK, account)
 	}
 }
 
@@ -186,7 +187,13 @@ func (h Handler) Reset() http.HandlerFunc {
 			return
 		}
 
-		if err = h.service.UpdatePassword(t.AccountId, request.NewPassword); err != nil {
+		account, err := h.service.ByAccountId(t.AccountId)
+		if err != nil {
+			rest.Error(w, http.StatusUnauthorized)
+			return
+		}
+
+		if err = h.service.UpdatePassword(account.Id, request.NewPassword); err != nil {
 			rest.Error(w, http.StatusBadRequest)
 			return
 		}
