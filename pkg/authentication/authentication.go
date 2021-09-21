@@ -16,7 +16,7 @@ type contextKey string
 
 const (
 	AccessTokenCookie = "atcId"
-	AccessTokenExpiry = time.Minute * 10
+	AccessTokenExpiry = time.Second * 5
 )
 
 const ContextKey contextKey = "AuthCtx"
@@ -99,7 +99,7 @@ func Middleware(activated bool) func(http.Handler) http.Handler {
 			}
 
 			if activated != claims.AccountActive {
-				rest.Error(w, http.StatusUnauthorized)
+				rest.Error(w, http.StatusForbidden)
 				return
 			}
 

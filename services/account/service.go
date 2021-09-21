@@ -18,7 +18,7 @@ type Account struct {
 	Email          string    `json:"-"`
 	PasswordHash   []byte    `json:"-"`
 	ActivationCode string    `json:"-"`
-	Active         bool      `json:"-"`
+	Active         bool      `json:"active"`
 	CreatedAt      time.Time `json:"-"`
 	UpdatedAt      time.Time `json:"-"`
 }

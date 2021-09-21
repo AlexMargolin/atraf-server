@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"atraf-server/pkg/uid"
 	"atraf-server/services/users"
 
 	"atraf-server/pkg/authentication"
@@ -34,11 +33,6 @@ type ForgotRequest struct {
 type ResetRequest struct {
 	Token       string `json:"token" validate:"required"`
 	NewPassword string `json:"new_password" validate:"required"`
-}
-
-type AuthResponse struct {
-	AccountId     uid.UID `json:"account_id"`
-	AccountActive bool    `json:"account_active"`
 }
 
 type Handler struct {
@@ -79,9 +73,8 @@ func (h Handler) Register() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusCreated, &AuthResponse{
-			AccountId:     account.Id,
-			AccountActive: false,
+		rest.Success(w, http.StatusCreated, &Account{
+			Active: false,
 		})
 	}
 }
@@ -112,9 +105,8 @@ func (h Handler) Activate() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusOK, &AuthResponse{
-			AccountId:     auth.AccountId,
-			AccountActive: true,
+		rest.Success(w, http.StatusOK, &Account{
+			Active: true,
 		})
 	}
 }
@@ -144,9 +136,8 @@ func (h Handler) Login() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusOK, &AuthResponse{
-			AccountId:     account.Id,
-			AccountActive: account.Active,
+		rest.Success(w, http.StatusOK, &Account{
+			Active: account.Active,
 		})
 	}
 }
