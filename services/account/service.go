@@ -19,7 +19,7 @@ type Account struct {
 	PasswordHash   []byte    `json:"-"`
 	ActivationCode string    `json:"-"`
 	Active         bool      `json:"active"`
-	Nickname       string    `json:"nickname"`
+	Nickname       string    `json:"-"`
 	CreatedAt      time.Time `json:"-"`
 	UpdatedAt      time.Time `json:"-"`
 }

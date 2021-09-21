@@ -18,13 +18,25 @@ type RegisterRequest struct {
 	Password string `json:"password" validate:"required"`
 }
 
+type RegisterResponse struct {
+	Account Account `json:"account"`
+}
+
 type ActivateRequest struct {
 	Code string `json:"code" validate:"required"`
+}
+
+type ActivateResponse struct {
+	Account Account `json:"account"`
 }
 
 type LoginRequest struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
+}
+
+type LoginResponse struct {
+	Account Account `json:"account"`
 }
 
 type ForgotRequest struct {
@@ -78,7 +90,9 @@ func (h Handler) Register() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusCreated, account)
+		rest.Success(w, http.StatusCreated, &RegisterResponse{
+			Account: account,
+		})
 	}
 }
 
@@ -114,7 +128,9 @@ func (h Handler) Activate() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusOK, account)
+		rest.Success(w, http.StatusOK, &ActivateResponse{
+			Account: account,
+		})
 	}
 }
 
@@ -143,7 +159,9 @@ func (h Handler) Login() http.HandlerFunc {
 			return
 		}
 
-		rest.Success(w, http.StatusOK, account)
+		rest.Success(w, http.StatusOK, &LoginResponse{
+			Account: account,
+		})
 	}
 }
 
