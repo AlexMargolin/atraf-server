@@ -8,7 +8,6 @@ import (
 func Cors(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		// TODO change values before deployment?
 		w.Header().Set("Access-Control-Allow-Origin", os.Getenv("CLIENT_URL"))
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")

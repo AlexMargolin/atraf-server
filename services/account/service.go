@@ -41,7 +41,7 @@ func (s Service) ByAccountId(accountId uid.UID) (Account, error) {
 	return s.storage.ByAccountId(accountId)
 }
 
-func (s Service) Register(password string, email string, nickname string) (Account, error) {
+func (s Service) Register(email string, nickname string, password string) (Account, error) {
 	passwordHash, err := s.newPasswordHash(password)
 	if err != nil {
 		return Account{}, err

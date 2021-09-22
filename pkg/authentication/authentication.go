@@ -16,7 +16,7 @@ type contextKey string
 
 const (
 	AccessTokenCookie = "atcId"
-	AccessTokenExpiry = time.Minute * 10
+	AccessTokenExpiry = time.Minute * 20
 )
 
 const ContextKey contextKey = "AuthCtx"
@@ -54,7 +54,7 @@ func SetCookie(w http.ResponseWriter, accountId uid.UID, accountActive bool) err
 		Name:     AccessTokenCookie,
 		Value:    token,
 		Path:     "/",
-		Secure:   false, // TODO enable
+		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteDefaultMode,
 	}
