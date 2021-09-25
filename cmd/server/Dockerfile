@@ -10,5 +10,6 @@ CMD ["bin/server"]
 FROM alpine:latest
 WORKDIR root
 COPY --from=builder /go/src/bin ./bin
+COPY --from=builder /go/src/templates ./templates
 EXPOSE 8080
 CMD ["bin/server"]
