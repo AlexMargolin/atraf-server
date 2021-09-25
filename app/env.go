@@ -19,7 +19,7 @@ func CheckEnvironment() error {
 		"DB_PASS",
 		"DB_NAME",
 		"SERVER_PORT",
-		"SERVER_HOST",
+		// "SERVER_HOST",
 		"SMTP_HOST",
 		"SMTP_PORT",
 		"SMTP_USER",

@@ -1,0 +1,10 @@
+version: "3.9"
+services:
+  server:
+    restart: always
+    build:
+      context: .
+      dockerfile: cmd/server/Dockerfile
+    image: ${REPOSITORY}:${VERSION}
+    ports:
+      - "80:8080"

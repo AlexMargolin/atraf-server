@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 
 	"github.com/go-chi/chi/v5"
 
@@ -52,6 +53,11 @@ func main() {
 	router := chi.NewRouter()
 	router.Use(middleware.Cors)
 	router.Use(middleware.Options)
+
+	// health check
+	router.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
 
 	// Public Routes
 	router.Group(func(router chi.Router) {
